@@ -1,7 +1,7 @@
 // Renderiza animacion.html a MP4 (1080x1920, 30 fps) con música.
-// Uso: node render.js [--preview t1,t2,...]
+// Uso: node render.js [archivo.html] [--preview t1,t2,... [carpeta]]
 const { chromium } = require('playwright');
-const { spawn } = require('child_process');
+const { spawn, execFileSync } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 
@@ -11,11 +11,13 @@ const dir = __dirname;
 (async () => {
   const browser = await chromium.launch();
   const page = await browser.newPage({ viewport: { width: 1080, height: 1920 } });
-  await page.goto('file://' + path.join(dir, 'animacion.html'));
+  const html = process.argv[2] && !process.argv[2].startsWith('--') ? process.argv[2] : 'animacion.html';
+  await page.goto('file://' + path.join(dir, html));
   await page.evaluate(async () => {
     for (const w of [600, 700, 800, 900]) await document.fonts.load(`${w} 40px Inter`);
   });
   const total = await page.evaluate(() => window.TOTAL);
+  const speed = await page.evaluate(() => window.SPEED || 1);
 
   const prevIdx = process.argv.indexOf('--preview');
   if (prevIdx > -1) {
@@ -28,16 +30,19 @@ const dir = __dirname;
     return;
   }
 
-  const out = path.join(dir, 'sudadera-capucha-tutorial.mp4');
+  const base = html === 'animacion.html' ? 'sudadera-capucha-tutorial' : 'sudadera-capucha-' + html.replace('animacion-', '').replace('.html', '');
+  const out = path.join(dir, base + '.mp4');
+  const wav = base + '.wav';
+  execFileSync('node', [path.join(dir, 'musica.js'), String(total / speed + 1), String(speed > 1 ? 0.42 : 0.6), wav], { stdio: 'inherit' });
   const ff = spawn('ffmpeg', ['-y', '-loglevel', 'error',
     '-f', 'image2pipe', '-framerate', String(FPS), '-c:v', 'mjpeg', '-i', '-',
-    '-i', path.join(dir, 'musica.wav'),
+    '-i', path.join(dir, wav),
     '-c:v', 'libx264', '-preset', 'medium', '-crf', '20', '-pix_fmt', 'yuv420p',
     '-c:a', 'aac', '-b:a', '160k', '-shortest', '-movflags', '+faststart', out], { stdio: ['pipe', 'inherit', 'inherit'] });
 
-  const frames = Math.round(total * FPS);
+  const frames = Math.round(total / speed * FPS);
   for (let f = 0; f < frames; f++) {
-    const url = await page.evaluate(t => { renderFrame(t); return document.getElementById('c').toDataURL('image/jpeg', 0.95); }, f / FPS);
+    const url = await page.evaluate(t => { renderFrame(t); return document.getElementById('c').toDataURL('image/jpeg', 0.95); }, f / FPS * speed);
     const buf = Buffer.from(url.split(',')[1], 'base64');
     if (!ff.stdin.write(buf)) await new Promise(r => ff.stdin.once('drain', r));
     if (f % 150 === 0) console.log(`frame ${f}/${frames}`);
@@ -45,5 +50,6 @@ const dir = __dirname;
   ff.stdin.end();
   await new Promise(r => ff.on('close', r));
   await browser.close();
+  fs.unlinkSync(path.join(dir, wav));
   console.log('Listo:', out);
 })();

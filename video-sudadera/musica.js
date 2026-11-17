@@ -2,7 +2,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const sr = 44100, dur = 57.5, N = Math.floor(sr * dur);
+const sr = 44100, dur = Number(process.argv[2] || 57.5), N = Math.floor(sr * dur);
 const L = new Float32Array(N), R = new Float32Array(N);
 const mf = m => 440 * Math.pow(2, (m - 69) / 12);
 
@@ -22,7 +22,7 @@ const kick = a => t => a * Math.exp(-t * 16) * Math.sin(2 * Math.PI * (45 * t + 
 let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647 * 2 - 1;
 const shaker = a => { let prev = 0; return t => { const n = rnd(); const v = n - prev; prev = n; return a * v * Math.exp(-t * 55); }; };
 
-const beat = 0.6, bar = beat * 4;
+const beat = Number(process.argv[3] || 0.6), bar = beat * 4;
 const chords = [
   { arp: [60, 64, 67, 72], bass: 36 }, // C
   { arp: [59, 62, 67, 71], bass: 43 }, // G
@@ -61,5 +61,5 @@ for (let i = 0; i < N; i++) {
   buf.writeInt16LE(Math.round(Math.max(-1, Math.min(1, L[i] * g * fade)) * 32767), 44 + i * 4);
   buf.writeInt16LE(Math.round(Math.max(-1, Math.min(1, R[i] * g * fade)) * 32767), 46 + i * 4);
 }
-fs.writeFileSync(path.join(__dirname, 'musica.wav'), buf);
+fs.writeFileSync(path.join(__dirname, process.argv[4] || 'musica.wav'), buf);
 console.log('musica.wav generada');
