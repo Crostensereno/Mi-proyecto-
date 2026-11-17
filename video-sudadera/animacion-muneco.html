@@ -26,19 +26,24 @@ const CONFIG = {
   portadaLinea1: 'MANUAL DE COSTURA',
   portadaLinea2: 'Sudadera con',
   portadaLinea3: 'capucha · hombre',
+  // Gancho del primer segundo
+  gancho1: '¿HARTO DE PAGAR',
+  ganchoPrecio: '40 €',
+  gancho2: 'POR UNA SUDADERA?',
+  ganchoSello: '¡HAZTE LA TUYA!',
 };
 // Lo que dice el muñeco en cada escena (tono cercano)
 const DIALOGO = {
-  intro: '¡Ey, hola! Hoy cosemos una sudadera con capucha. ¡Y sin llorar!',
+  intro: 'Te enseño en un minuto, paso a paso. ¡Y sin llorar!',
   materiales: 'Apunta: felpa, rib, hilo, tijeras, clips... ¡y paciencia, que esa no se vende!',
   cortar: 'Patrón encima, tijeras en mano... ¡y corta sin miedo, valiente!',
-  bolsillo: 'El bolsillo canguro: dobla, cose y listo. Ahí van tus manos... o tus snacks.',
+  bolsillo: 'El bolsillo canguro: dobla, cose y listo. Ahí van tus manos... o tus chuches.',
   hombros: 'Delantero y espalda, derecho con derecho. ¡Como dos colegas dándose un abrazo!',
-  capucha: 'Ahora la capucha, al escote. ¡Para tus días de no quiero hablar con nadie!',
+  capucha: 'Ahora la capucha, al escote. ¡Para tus días de no me habléis!',
   mangas: 'Las mangas: el centro, con la costura del hombro. ¡Que no te quede torcida!',
   costados: 'Y cerramos de un tirón, del puño hasta abajo. ¡Zas!',
   rib: 'Puños y pretina: estira un poquito el rib... ¡pero sin pasarte, eh!',
-  final: '¡Tachán! ¿A\u00a0que ha quedado chulísima? Dime que sí.',
+  final: '¡Tachán! Hecha por ti y a tu medida. ¿A\u00a0que mola?',
   cta: '¡Todos los trucos están en mi PDF!',
 };
 const SPEED = 1.5; // velocidad del vídeo
@@ -439,7 +444,7 @@ function sIntro(lt, d) {
   ctx.save(); ctx.translate(560, 1000); ctx.rotate(sway); ctx.scale(p, p);
   drawHoodie(0, -40, 0.7, FULL(), lt);
   ctx.restore();
-  bubble(lt, DIALOGO.intro, { delay: .6 });
+  bubble(lt, DIALOGO.intro, { delay: .3 });
 }
 
 function card(x, y, w, h, a, label, icon) {
@@ -736,8 +741,66 @@ function sCTA(lt, d) {
   ctx.restore();
 }
 
+// ---------- GANCHO (primer segundo) ----------
+let GANCHO_CORTE = 3; // instante (tiempo de escena) en que dice "¡Pues hazte la tuya!"
+function sHook(lt, d) {
+  ctx.fillStyle = C.acc; ctx.fillRect(0, 0, W, H);
+  ctx.save(); ctx.globalAlpha = 0.12; ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
+  for (let x = 60; x < W; x += 80) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+  for (let y = 40; y < H; y += 80) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+  ctx.restore();
+  const cut = GANCHO_CORTE;
+  // texto grande, visible desde el primer fotograma
+  const z = 1 + 0.12 * (1 - eOut(seg(lt, 0, .35)));
+  ctx.save(); ctx.translate(540, 520); ctx.scale(z, z); ctx.translate(-540, -520);
+  ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic'; ctx.letterSpacing = '-2px';
+  ctx.fillStyle = '#fff'; ctx.font = '900 92px Inter'; ctx.fillText(CONFIG.gancho1, 540, 310);
+  const shake = lt < cut ? Math.sin(lt * 40) * 6 * (1 - seg(lt, .2, 1.2)) : 0;
+  ctx.fillStyle = C.ink; ctx.font = '900 300px Inter'; ctx.letterSpacing = '-8px';
+  ctx.fillText(CONFIG.ganchoPrecio, 540 + shake, 590);
+  const pw = ctx.measureText(CONFIG.ganchoPrecio).width;
+  ctx.fillStyle = '#fff'; ctx.font = '900 84px Inter'; ctx.letterSpacing = '-2px';
+  ctx.fillText(CONFIG.gancho2, 540, 720);
+  // tachón rojo sobre el precio
+  const sp = eOut(seg(lt, cut - .1, cut + .25));
+  if (sp > 0) {
+    ctx.strokeStyle = '#D7263D'; ctx.lineWidth = 26; ctx.lineCap = 'round';
+    const x0 = 540 - pw / 2 - 20, x1 = 540 + pw / 2 + 20;
+    ctx.beginPath(); ctx.moveTo(x0, 520); ctx.lineTo(lerp(x0, x1, sp), lerp(520, 420, sp)); ctx.stroke();
+  }
+  ctx.restore();
+  // sudadera en percha con etiqueta
+  const hy = 1150, sw = Math.sin(lt * 2.4) * 0.03;
+  ctx.save(); ctx.translate(560, hy - 250); ctx.rotate(sw); ctx.translate(-560, -(hy - 250));
+  drawHoodie(560, hy - 190, 0.62, FULL(), lt);
+  // etiqueta de precio colgando de la manga
+  const tg = [745, hy + 90], ta = Math.sin(lt * 3.1) * 0.15;
+  ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(735, hy + 55); ctx.lineTo(tg[0], tg[1]); ctx.stroke();
+  ctx.save(); ctx.translate(tg[0], tg[1]); ctx.rotate(0.25 + ta);
+  ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.moveTo(-20, 0); ctx.lineTo(20, 0); ctx.lineTo(48, 30); ctx.lineTo(48, 130); ctx.lineTo(-48, 130); ctx.lineTo(-48, 30); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = C.acc; ctx.beginPath(); ctx.arc(0, 18, 7, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = C.ink; ctx.font = '900 40px Inter'; ctx.letterSpacing = '-1px'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText('40€', 0, 82);
+  if (sp > 0) { ctx.strokeStyle = '#D7263D'; ctx.lineWidth = 8; ctx.beginPath(); ctx.moveTo(-36, 50 + 70 * 0); ctx.lineTo(-36 + 72 * sp, 50 + 64 * sp); ctx.moveTo(36, 50); ctx.lineTo(36 - 72 * sp, 50 + 64 * sp); ctx.stroke(); }
+  ctx.restore();
+  ctx.restore();
+  // sello "¡HAZTE LA TUYA!"
+  const st = seg(lt, cut, cut + .3);
+  if (st > 0) {
+    const sc = lerp(2.4, 1, eOut(st)) + Math.sin(seg(lt, cut + .3, cut + .7) * Math.PI) * 0.05;
+    ctx.save(); ctx.translate(560, 1230); ctx.rotate(-0.12); ctx.scale(sc, sc); ctx.globalAlpha *= Math.min(1, st * 3);
+    ctx.font = '900 92px Inter'; ctx.letterSpacing = '-2px';
+    const w = ctx.measureText(CONFIG.ganchoSello).width + 90;
+    shadow(1, 40, 16, .35); ctx.fillStyle = C.ink; rr(-w / 2, -80, w, 160, 34); ctx.fill(); shadow(0);
+    ctx.strokeStyle = C.acc2; ctx.lineWidth = 8; rr(-w / 2 + 14, -66, w - 28, 132, 26); ctx.stroke();
+    ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(CONFIG.ganchoSello, 0, 6);
+    ctx.restore();
+  }
+}
+
 const SCENES = [
-  { d: 5.4, f: sIntro, pose: 'wave', k: 'intro' },
+  { d: 3.0, f: sHook, pose: 'explain', k: 'gancho', nobubble: true },
+  { d: 4.2, f: sIntro, pose: 'wave', k: 'intro' },
   { d: 6.3, f: sMaterials, step: 1, pose: 'explain', k: 'materiales' },
   { d: 6.6, f: sCut, step: 2, pose: 'point', k: 'cortar' },
   { d: 5.4, f: sPocket, sw: [1.5, 4.3], step: 3, pose: 'explain', k: 'bolsillo' },
@@ -749,22 +812,25 @@ const SCENES = [
   { d: 4.5, f: sFinal, pose: 'cheer', k: 'final' },
   { d: 8.4, f: sCTA, last: true, k: 'cta' },
 ];
-// Voz: duración en segundos reales de cada frase (voz/NN.wav). null = sin voz.
-const VOZ = [3.09,  4.2,  3.43,  4.1,  4.31,  3.82,  3.78,  2.75,  3.48,  2.45,  4.42];
-const VOZ_DELAY = 0.3; // segundos reales desde el inicio de la escena
-SCENES.forEach((s, i) => { if (VOZ[i]) s.d = Math.max(s.d, (VOZ[i] + VOZ_DELAY + 0.45) * SPEED); });
+// Voz: duración en segundos reales de cada frase (voz/NN.wav, ver voz/duraciones.json). null = sin voz.
+const VOZ = [3.6,  2.71,  4.54,  3.28,  4.73,  4.56,  3.59,  4.0,  2.53,  3.45,  2.8,  4.81];
+const VOZ_GANCHO_CORTE = 2.5; // segundos desde el inicio de 00.wav hasta "¡Pues hazte la tuya!"
+const delayOf = i => i === 0 ? 0.05 : 0.3; // segundos reales desde el inicio de la escena
+SCENES.forEach((s, i) => { if (VOZ[i]) s.d = Math.max(s.d, (VOZ[i] + delayOf(i) + 0.45) * SPEED); });
+GANCHO_CORTE = (delayOf(0) + VOZ_GANCHO_CORTE) * SPEED;
 let TALK = false;
 const TOTAL = SCENES.reduce((a, s) => a + s.d, 0);
 window.TOTAL = TOTAL;
 window.SCENES = SCENES; window.DIALOGO = DIALOGO; window.SPEED = SPEED;
-{ let a = 0; window.VOZ_STARTS = SCENES.map((s, i) => { const st = a / SPEED + VOZ_DELAY; a += s.d; return VOZ[i] ? st : null; }); }
+{ let a = 0; window.VOZ_STARTS = SCENES.map((s, i) => { const st = a / SPEED + delayOf(i); a += s.d; return VOZ[i] ? st : null; }); }
 // Efectos de sonido (segundos reales) para render.js
 {
   let a = 0; const ev = [];
   SCENES.forEach((s, i) => {
     const st = a / SPEED, R = x => st + x / SPEED;
     if (i > 0) ev.push({ t: st, type: 'whoosh' });
-    if (!s.last) ev.push({ t: R(i === 0 ? .6 : .15), type: 'pop' });
+    if (!s.last && !s.nobubble) ev.push({ t: R(s.f === sIntro ? .6 : .15), type: 'pop' });
+    if (s.f === sHook) { ev.push({ t: st, type: 'pop' }); ev.push({ t: R(GANCHO_CORTE), type: 'thud' }); }
     if (s.sw) ev.push({ t: R(s.sw[0]), d: (s.sw[1] - s.sw[0]) / SPEED, type: 'machine' });
     if (s.f === sCut) for (let x = 2.1; x < 5.2; x += .55) ev.push({ t: R(x), type: 'snip' });
     if (s.f === sFinal) ev.push({ t: R(.05), type: 'tada' });
@@ -778,7 +844,7 @@ window.renderFrame = function (t) {
   let acc = 0, idx = 0;
   while (idx < SCENES.length - 1 && t >= acc + SCENES[idx].d) { acc += SCENES[idx].d; idx++; }
   const sc = SCENES[idx], lt = t - acc;
-  TALK = VOZ[idx] ? lt > VOZ_DELAY * SPEED && lt < (VOZ_DELAY + VOZ[idx]) * SPEED : lt > .4 && lt < sc.d - .5;
+  TALK = VOZ[idx] ? lt > delayOf(idx) * SPEED && lt < (delayOf(idx) + VOZ[idx]) * SPEED : lt > .4 && lt < sc.d - .5;
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.globalAlpha = 1; ctx.setLineDash([]); shadow(0);
   background();
@@ -789,7 +855,7 @@ window.renderFrame = function (t) {
   ctx.restore();
   if (!sc.last) {
     ctx.save(); ctx.globalAlpha = idx === SCENES.length - 2 ? fade : 1;
-    const enter = idx === 0 ? eBack(seg(lt, .1, .6)) : 1;
+    const enter = 1;
     stickman(165 - (1 - enter) * 300, 1790, 1, sc.pose, t, TALK);
     ctx.restore();
   }

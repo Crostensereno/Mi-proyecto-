@@ -24,10 +24,12 @@ const SFX = {
   snip: () => tt => { const c = (x, f) => (tt > x ? Math.exp(-(tt - x) * 90) * (Math.sin(TAU * f * (tt - x)) * 0.6 + rnd() * 0.5) : 0); return 0.45 * (c(0, 3200) + c(0.07, 2600)); },
   // tachán: acorde mayor en arpegio con brillo
   tada: () => tt => { let v = 0; [[0, 523.25], [0.09, 659.25], [0.18, 783.99], [0.27, 1046.5]].forEach(([x, f]) => { if (tt > x) { const u = tt - x; v += Math.exp(-u * 2.5) * (Math.sin(TAU * f * u) + 0.4 * Math.sin(TAU * 2 * f * u) + 0.2 * Math.sin(TAU * 3 * f * u)); } }); return 0.16 * v; },
+  // golpe de sello: bombo grave + chasquido
+  thud: () => tt => 0.8 * Math.exp(-tt * 9) * Math.sin(TAU * (50 * tt + 90 * (1 - Math.exp(-tt * 25)) / 25)) + 0.25 * Math.exp(-tt * 60) * rnd(),
   // ding del botón
   ding: () => tt => 0.3 * Math.exp(-tt * 4) * (Math.sin(TAU * 1318.5 * tt) + 0.5 * Math.sin(TAU * 2637 * tt) * Math.exp(-tt * 6)),
 };
-const LEN = { pop: 0.25, whoosh: 0.4, snip: 0.25, tada: 2.2, ding: 1.5 };
+const LEN = { thud: 0.6, pop: 0.25, whoosh: 0.4, snip: 0.25, tada: 2.2, ding: 1.5 };
 for (const e of ev) {
   const len = e.type === 'machine' ? e.d : LEN[e.type];
   add(e.t, len, SFX[e.type](e.d), e.type === 'snip' ? 0.2 : 0);

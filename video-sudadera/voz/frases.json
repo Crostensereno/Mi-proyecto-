@@ -1,13 +1,17 @@
-[
- "¡Ey, hola! Hoy cosemos una sudadera con capucha. ¡Y sin llorar!",
- "Apunta: felpa, rib, hilo, tijeras, clips... ¡y paciencia, que esa no se vende!",
- "Patrón encima, tijeras en mano... ¡y corta sin miedo, valiente!",
- "El bolsillo canguro: dobla, cose y listo. Ahí van tus manos... o tus snacks.",
- "Delantero y espalda, derecho con derecho. ¡Como dos colegas dándose un abrazo!",
- "Ahora la capucha, al escote. ¡Para tus días de no quiero hablar con nadie!",
- "Las mangas: el centro, con la costura del hombro. ¡Que no te quede torcida!",
- "Y cerramos de un tirón, del puño hasta abajo. ¡Zas!",
- "Puños y pretina: estira un poquito el rib... ¡pero sin pasarte, eh!",
- "¡Tachán! ¿A que ha quedado chulísima? Dime que sí.",
- "¿Quieres todos los trucos? Están en mi manual en PDF. ¡Corre, que te lo dejo en la bio!"
-]
+{
+  "nota": "voz = lo que se pronuncia (escrito para que suene bien); el texto de los bocadillos está en DIALOGO en animacion-muneco.html",
+  "gancho": ["¿Harto de pagar cuarenta pavos por una sudadera?", "¡Pues hazte la tuya!"],
+  "voz": [
+    "Te enseño en un minuto, paso a paso. ¡Y sin llorar!",
+    "Apunta: felpa, rib, hilo, tijeras, clips... ¡y paciencia, que esa no se vende!",
+    "Patrón encima, tijeras en mano... ¡y corta sin miedo, valiente!",
+    "El bolsillo canguro: dobla, cose y listo. Ahí van tus manos... o tus chuches.",
+    "Delantero y espalda, derecho con derecho. ¡Como dos colegas dándose un abrazo!",
+    "Ahora la capucha, al escote. ¡Para tus días de no me habléis!",
+    "Las mangas: el centro, con la costura del hombro. ¡Que no te quede torcida!",
+    "Y cerramos de un tirón, del puño hasta abajo. ¡Zas!",
+    "Puños y pretina: estira un poquito el rib... ¡pero sin pasarte, eh!",
+    "¡Tachán! Hecha por ti y a tu medida. ¿A que mola?",
+    "¿Quieres todos los trucos? Están en mi manual en pe de efe. ¡Corre, que te lo dejo en la bio!"
+  ]
+}
