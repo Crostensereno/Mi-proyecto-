@@ -699,7 +699,7 @@ function sCTA(lt, d) {
   if (pp > 0) drawPDF(660, 850 + Math.sin(lt * 2) * 10, -0.05 + Math.sin(lt * 1.5) * 0.015, pp * 0.82, lt);
   const fa = eOut(seg(lt, .3, .8));
   ctx.save(); ctx.globalAlpha *= fa;
-  stickman(220, 1140, 0.8, 'point', lt, lt > .6 && lt < 3.5, true);
+  stickman(220, 1140, 0.8, 'point', lt, TALK, true);
   ctx.restore();
   bubble(lt, DIALOGO.cta, { x: 50, y: 560, w: 370, size: 36, tail: [215, 830], delay: .7 });
   CONFIG.beneficios.forEach((txt, i) => {
@@ -749,14 +749,21 @@ const SCENES = [
   { d: 4.5, f: sFinal, pose: 'cheer', k: 'final' },
   { d: 8.4, f: sCTA, last: true, k: 'cta' },
 ];
-window.SCENES = SCENES; window.DIALOGO = DIALOGO; window.SPEED = SPEED;
+// Voz: duración en segundos reales de cada frase (voz/NN.wav). null = sin voz.
+const VOZ = [3.65, 4.03, 3.54, 3.24, 3.9, 3.39, 3.61, 2.67, 3.5, 2.52, 3.99];
+const VOZ_DELAY = 0.3; // segundos reales desde el inicio de la escena
+SCENES.forEach((s, i) => { if (VOZ[i]) s.d = Math.max(s.d, (VOZ[i] + VOZ_DELAY + 0.45) * SPEED); });
+let TALK = false;
 const TOTAL = SCENES.reduce((a, s) => a + s.d, 0);
 window.TOTAL = TOTAL;
+window.SCENES = SCENES; window.DIALOGO = DIALOGO; window.SPEED = SPEED;
+{ let a = 0; window.VOZ_STARTS = SCENES.map((s, i) => { const st = a / SPEED + VOZ_DELAY; a += s.d; return VOZ[i] ? st : null; }); }
 
 window.renderFrame = function (t) {
   let acc = 0, idx = 0;
   while (idx < SCENES.length - 1 && t >= acc + SCENES[idx].d) { acc += SCENES[idx].d; idx++; }
   const sc = SCENES[idx], lt = t - acc;
+  TALK = VOZ[idx] ? lt > VOZ_DELAY * SPEED && lt < (VOZ_DELAY + VOZ[idx]) * SPEED : lt > .4 && lt < sc.d - .5;
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.globalAlpha = 1; ctx.setLineDash([]); shadow(0);
   background();
@@ -768,7 +775,7 @@ window.renderFrame = function (t) {
   if (!sc.last) {
     ctx.save(); ctx.globalAlpha = idx === SCENES.length - 2 ? fade : 1;
     const enter = idx === 0 ? eBack(seg(lt, .1, .6)) : 1;
-    stickman(165 - (1 - enter) * 300, 1790, 1, sc.pose, t, lt > .4 && lt < sc.d - .5);
+    stickman(165 - (1 - enter) * 300, 1790, 1, sc.pose, t, TALK);
     ctx.restore();
   }
 };
