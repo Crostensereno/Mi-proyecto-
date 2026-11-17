@@ -40,12 +40,21 @@ const dir = __dirname;
     .filter(v => v.st !== null && fs.existsSync(v.f));
   const audioIn = [], filt = [];
   voces.forEach((v, i) => { audioIn.push('-i', v.f); filt.push(`[${i + 2}:a]aresample=44100,aformat=channel_layouts=stereo,volume=1.6,adelay=${Math.round(v.st * 1000)}|${Math.round(v.st * 1000)}[v${i}]`); });
+  // Efectos de sonido (opcional): window.SFX -> sfx.js
+  const sfxEv = await page.evaluate(() => window.SFX || null);
+  const sfxWav = base + '-sfx.wav', sfxJson = path.join(dir, base + '-sfx.json');
+  if (sfxEv) {
+    fs.writeFileSync(sfxJson, JSON.stringify(sfxEv));
+    execFileSync('node', [path.join(dir, 'sfx.js'), sfxJson, String(total / speed + 1), path.join(dir, sfxWav)], { stdio: 'inherit' });
+    audioIn.push('-i', path.join(dir, sfxWav));
+    filt.push(`[${voces.length + 2}:a]volume=0.9[sfx]`);
+  }
   let audioMap = ['-map', '1:a'];
   if (voces.length) {
     filt.push(`${voces.map((_, i) => `[v${i}]`).join('')}amix=inputs=${voces.length}:normalize=0[voz]`,
       '[voz]apad[vozp]', '[vozp]asplit[voz1][voz2]', '[1:a]volume=0.8[mus]',
       '[mus][voz1]sidechaincompress=threshold=0.02:ratio=10:attack=15:release=350[musd]',
-      '[musd][voz2]amix=inputs=2:normalize=0:duration=first,loudnorm=I=-14:TP=-1.5:LRA=11,aresample=44100[aout]');
+      `[musd][voz2]${sfxEv ? '[sfx]' : ''}amix=inputs=${sfxEv ? 3 : 2}:normalize=0:duration=first,loudnorm=I=-14:TP=-1.5:LRA=11,aresample=44100[aout]`);
     audioMap = ['-filter_complex', filt.join(';'), '-map', '[aout]'];
   }
   const ff = spawn('ffmpeg', ['-y', '-loglevel', 'error',
@@ -66,5 +75,6 @@ const dir = __dirname;
   await new Promise(r => ff.on('close', r));
   await browser.close();
   fs.unlinkSync(path.join(dir, wav));
+  if (sfxEv) { fs.unlinkSync(path.join(dir, sfxWav)); fs.unlinkSync(sfxJson); }
   console.log('Listo:', out);
 })();

@@ -29,16 +29,16 @@ const CONFIG = {
 };
 // Lo que dice el muñeco en cada escena (tono cercano)
 const DIALOGO = {
-  intro: '¡Hola! Hoy te enseño a coser una sudadera con capucha. ¡Vamos al lío!',
-  materiales: 'Necesitas felpa, rib para los puños, hilo, tijeras, clips y aguja de punto.',
-  cortar: 'Primero, pon el patrón sobre la tela y recorta todas las piezas.',
-  bolsillo: 'Ahora el bolsillo: dobla los bordes y cóselo al delantero.',
-  hombros: 'Juntamos delantero y espalda, derecho con derecho, y cosemos hombros.',
-  capucha: 'Cierra el centro de la capucha y pégala al escote. ¡Facilísimo!',
-  mangas: 'Luego las mangas: el centro de la manga va con la costura del hombro.',
-  costados: 'Y cerramos de un tirón: desde el puño hasta abajo.',
-  rib: 'Por último, puños y pretina. ¡Estira un poquito el rib al coser!',
-  final: '¡Tachán! Sudadera lista. ¿A\u00a0que ha quedado chula?',
+  intro: '¡Ey, hola! Hoy cosemos una sudadera con capucha. ¡Y sin llorar!',
+  materiales: 'Apunta: felpa, rib, hilo, tijeras, clips... ¡y paciencia, que esa no se vende!',
+  cortar: 'Patrón encima, tijeras en mano... ¡y corta sin miedo, valiente!',
+  bolsillo: 'El bolsillo canguro: dobla, cose y listo. Ahí van tus manos... o tus snacks.',
+  hombros: 'Delantero y espalda, derecho con derecho. ¡Como dos colegas dándose un abrazo!',
+  capucha: 'Ahora la capucha, al escote. ¡Para tus días de no quiero hablar con nadie!',
+  mangas: 'Las mangas: el centro, con la costura del hombro. ¡Que no te quede torcida!',
+  costados: 'Y cerramos de un tirón, del puño hasta abajo. ¡Zas!',
+  rib: 'Puños y pretina: estira un poquito el rib... ¡pero sin pasarte, eh!',
+  final: '¡Tachán! ¿A\u00a0que ha quedado chulísima? Dime que sí.',
   cta: '¡Todos los trucos están en mi PDF!',
 };
 const SPEED = 1.5; // velocidad del vídeo
@@ -740,17 +740,17 @@ const SCENES = [
   { d: 5.4, f: sIntro, pose: 'wave', k: 'intro' },
   { d: 6.3, f: sMaterials, step: 1, pose: 'explain', k: 'materiales' },
   { d: 6.6, f: sCut, step: 2, pose: 'point', k: 'cortar' },
-  { d: 5.4, f: sPocket, step: 3, pose: 'explain', k: 'bolsillo' },
-  { d: 5.1, f: sShoulders, step: 4, pose: 'point', k: 'hombros' },
-  { d: 5.1, f: sHood, step: 5, pose: 'explain', k: 'capucha' },
-  { d: 5.1, f: sSleeves, step: 6, pose: 'point', k: 'mangas' },
-  { d: 4.8, f: sSides, step: 7, pose: 'explain', k: 'costados' },
-  { d: 5.7, f: sRib, step: 8, pose: 'point', k: 'rib' },
+  { d: 5.4, f: sPocket, sw: [1.5, 4.3], step: 3, pose: 'explain', k: 'bolsillo' },
+  { d: 5.1, f: sShoulders, sw: [1.5, 3.8], step: 4, pose: 'point', k: 'hombros' },
+  { d: 5.1, f: sHood, sw: [1.6, 4.2], step: 5, pose: 'explain', k: 'capucha' },
+  { d: 5.1, f: sSleeves, sw: [1.5, 3.8], step: 6, pose: 'point', k: 'mangas' },
+  { d: 4.8, f: sSides, sw: [0.5, 3.8], step: 7, pose: 'explain', k: 'costados' },
+  { d: 5.7, f: sRib, sw: [1.4, 3.8], step: 8, pose: 'point', k: 'rib' },
   { d: 4.5, f: sFinal, pose: 'cheer', k: 'final' },
   { d: 8.4, f: sCTA, last: true, k: 'cta' },
 ];
 // Voz: duración en segundos reales de cada frase (voz/NN.wav). null = sin voz.
-const VOZ = [3.65, 4.03, 3.54, 3.24, 3.9, 3.39, 3.61, 2.67, 3.5, 2.52, 3.99];
+const VOZ = [3.09,  4.2,  3.43,  4.1,  4.31,  3.82,  3.78,  2.75,  3.48,  2.45,  4.42];
 const VOZ_DELAY = 0.3; // segundos reales desde el inicio de la escena
 SCENES.forEach((s, i) => { if (VOZ[i]) s.d = Math.max(s.d, (VOZ[i] + VOZ_DELAY + 0.45) * SPEED); });
 let TALK = false;
@@ -758,6 +758,21 @@ const TOTAL = SCENES.reduce((a, s) => a + s.d, 0);
 window.TOTAL = TOTAL;
 window.SCENES = SCENES; window.DIALOGO = DIALOGO; window.SPEED = SPEED;
 { let a = 0; window.VOZ_STARTS = SCENES.map((s, i) => { const st = a / SPEED + VOZ_DELAY; a += s.d; return VOZ[i] ? st : null; }); }
+// Efectos de sonido (segundos reales) para render.js
+{
+  let a = 0; const ev = [];
+  SCENES.forEach((s, i) => {
+    const st = a / SPEED, R = x => st + x / SPEED;
+    if (i > 0) ev.push({ t: st, type: 'whoosh' });
+    if (!s.last) ev.push({ t: R(i === 0 ? .6 : .15), type: 'pop' });
+    if (s.sw) ev.push({ t: R(s.sw[0]), d: (s.sw[1] - s.sw[0]) / SPEED, type: 'machine' });
+    if (s.f === sCut) for (let x = 2.1; x < 5.2; x += .55) ev.push({ t: R(x), type: 'snip' });
+    if (s.f === sFinal) ev.push({ t: R(.05), type: 'tada' });
+    if (s.last) { ev.push({ t: R(.7), type: 'pop' }); ev.push({ t: R(2.65), type: 'ding' }); }
+    a += s.d;
+  });
+  window.SFX = ev;
+}
 
 window.renderFrame = function (t) {
   let acc = 0, idx = 0;

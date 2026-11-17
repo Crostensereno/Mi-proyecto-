@@ -20,3 +20,5 @@ node render.js
 ```
 node render.js animacion-muneco.html
 ```
+- `sfx.js`: comedy sound effects (pop, whoosh, sewing machine, scissors, ta-da, ding), placed using `SFX` in `animacion-muneco.html`.
+- `voz/`: voiceover lines (`frases.json`) and the script that generates them for free (`generar_voz.py`, Kokoro).
