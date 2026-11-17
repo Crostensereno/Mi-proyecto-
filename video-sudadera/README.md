@@ -22,3 +22,13 @@ node render.js animacion-muneco.html
 ```
 - `sfx.js`: comedy sound effects (pop, whoosh, sewing machine, scissors, ta-da, ding), placed using `SFX` in `animacion-muneco.html`.
 - `voz/`: voiceover lines (`frases.json`) and the script that generates them for free (`generar_voz.py`, Kokoro).
+
+## Version with my own voice
+
+- `sudadera-capucha-mi-voz.mp4`: video synced to my recording (28.6 s).
+- `animacion-mi-voz.html`: the scene cuts are in `T` (seconds), taken from the recording; the stick figure's mouth follows the volume of the voice (`ENV`).
+- `voz-mia/voz.wav`: the processed voice (noise reduction, EQ, compression). The original recording is not uploaded.
+
+```
+node render.js animacion-mi-voz.html
+```

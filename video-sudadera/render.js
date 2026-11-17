@@ -36,8 +36,10 @@ const dir = __dirname;
   execFileSync('node', [path.join(dir, 'musica.js'), String(total / speed + 1), String(speed > 1 ? 0.42 : 0.6), wav], { stdio: 'inherit' });
   // Voz (opcional): voz/NN.wav colocadas en VOZ_STARTS; la música baja cuando habla.
   const starts = await page.evaluate(() => window.VOZ_STARTS || []);
-  const voces = starts.map((st, i) => ({ st, f: path.join(dir, 'voz', String(i).padStart(2, '0') + '.wav') }))
+  let voces = starts.map((st, i) => ({ st, f: path.join(dir, 'voz', String(i).padStart(2, '0') + '.wav') }))
     .filter(v => v.st !== null && fs.existsSync(v.f));
+  const vozFiles = await page.evaluate(() => window.VOZ_FILES || null);
+  if (vozFiles) { voces.length = 0; vozFiles.forEach(v => voces.push({ st: v.st, f: path.join(dir, v.f) })); }
   const audioIn = [], filt = [];
   voces.forEach((v, i) => { audioIn.push('-i', v.f); filt.push(`[${i + 2}:a]aresample=44100,aformat=channel_layouts=stereo,volume=1.6,adelay=${Math.round(v.st * 1000)}|${Math.round(v.st * 1000)}[v${i}]`); });
   // Efectos de sonido (opcional): window.SFX -> sfx.js

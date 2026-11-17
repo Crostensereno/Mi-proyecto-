@@ -1,2 +1,4 @@
 *.wav
 !voz/*.wav
+!voz-mia/voz.wav
+voz-mia/original.*
