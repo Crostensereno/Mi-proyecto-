@@ -1,0 +1,690 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Sudadera con capucha</title>
+<style>
+  html,body{margin:0;background:#F5EFE6}
+  canvas{display:block;width:540px;height:960px}
+</style>
+</head>
+<body>
+<canvas id="c" width="1080" height="1920"></canvas>
+<script>
+// ======================= TEXTOS EDITABLES =======================
+const CONFIG = {
+  ctaPregunta: '¿Quieres el paso a paso completo?',
+  ctaTitulo1: 'Consigue el manual',
+  ctaTitulo2: 'en PDF',
+  beneficios: [
+    'Explicación paso a paso',
+    'Ilustraciones claras',
+    'Consejos para un acabado pro',
+  ],
+  boton: 'Descárgalo ahora',
+  enlace: 'Enlace en la bio',
+  portadaLinea1: 'MANUAL DE COSTURA',
+  portadaLinea2: 'Sudadera con',
+  portadaLinea3: 'capucha · hombre',
+};
+// ================================================================
+
+const W = 1080, H = 1920;
+const cv = document.getElementById('c');
+const ctx = cv.getContext('2d');
+
+const C = {
+  bg: '#F5EFE6', grid: '#E9DECD', ink: '#2B2D42', muted: '#5E6174',
+  fab: '#46597A', fabD: '#364660', fabL: '#5A7096', rib: '#33425A',
+  line: '#26324A', inside: '#222C40', acc: '#E07A3F', acc2: '#F2B544',
+  stitch: '#FFE7C2', paper: '#FFFFFF', dark: '#23253A',
+};
+
+// ---------- utilidades ----------
+const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+const seg = (t, a, b) => clamp((t - a) / (b - a));
+const eOut = t => 1 - Math.pow(1 - t, 3);
+const eInOut = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+const eBack = t => { const c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); };
+
+function qb(p0, p1, p2, n = 18) {
+  const r = [];
+  for (let i = 0; i <= n; i++) {
+    const t = i / n, u = 1 - t;
+    r.push([u*u*p0[0] + 2*u*t*p1[0] + t*t*p2[0], u*u*p0[1] + 2*u*t*p1[1] + t*t*p2[1]]);
+  }
+  return r;
+}
+function build(spec) {
+  const pts = [];
+  for (const s of spec) {
+    if (Array.isArray(s)) pts.push(s);
+    else { const c = qb(pts[pts.length - 1], s.q[0], s.q[1]); c.shift(); pts.push(...c); }
+  }
+  return pts;
+}
+const mirror = pts => pts.map(([x, y]) => [-x, y]);
+const xf = (pts, ox, oy, s, mx = 1) => pts.map(([x, y]) => [ox + s * x * mx, oy + s * y]);
+function inset(pts, f, c) { return pts.map(([x, y]) => [c[0] + (x - c[0]) * f, c[1] + (y - c[1]) * f]); }
+const closed = pts => [...pts, pts[0]];
+
+function tracePts(pts, close = true) {
+  ctx.beginPath();
+  pts.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]));
+  if (close) ctx.closePath();
+}
+function fillPts(pts, fill, stroke, lw = 4) {
+  tracePts(pts);
+  if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+  if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = lw; ctx.lineJoin = 'round'; ctx.stroke(); }
+}
+function polyLen(pts) {
+  const L = [0];
+  for (let i = 1; i < pts.length; i++) L.push(L[i-1] + Math.hypot(pts[i][0]-pts[i-1][0], pts[i][1]-pts[i-1][1]));
+  return L;
+}
+function partial(pts, p) {
+  const L = polyLen(pts), target = L[L.length - 1] * p, out = [pts[0]];
+  for (let i = 1; i < pts.length; i++) {
+    if (L[i] <= target) out.push(pts[i]);
+    else {
+      const f = (target - L[i-1]) / (L[i] - L[i-1] || 1);
+      out.push([lerp(pts[i-1][0], pts[i][0], f), lerp(pts[i-1][1], pts[i][1], f)]);
+      break;
+    }
+  }
+  return out;
+}
+function tangentAt(pts, p) {
+  const q = partial(pts, clamp(p, 0.001, 1));
+  const a = q[q.length - 2] || pts[0], b = q[q.length - 1];
+  return { pt: b, ang: Math.atan2(b[1] - a[1], b[0] - a[0]) };
+}
+function rr(x, y, w, h, r) {
+  ctx.beginPath(); ctx.roundRect(x, y, w, h, r);
+}
+function shadow(on, blur = 30, oy = 14, a = 0.18) {
+  if (on) { ctx.shadowColor = `rgba(50,35,20,${a})`; ctx.shadowBlur = blur; ctx.shadowOffsetY = oy; }
+  else { ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0; ctx.shadowOffsetY = 0; }
+}
+function wrapLines(text, maxW) {
+  const words = text.split(' '); let line = ''; const lines = [];
+  for (const w of words) {
+    const t = line ? line + ' ' + w : w;
+    if (ctx.measureText(t).width > maxW && line) { lines.push(line); line = w; } else line = t;
+  }
+  lines.push(line); return lines;
+}
+
+// ---------- geometría de la sudadera (vista frontal montada) ----------
+const G = {};
+G.torso = build([[-70,-10], {q:[[0,75],[70,-10]]}, [170,25], [185,190], [185,520], [-185,520], [-185,190], [-170,25]]);
+G.back  = build([[-70,-10], {q:[[0,12],[70,-10]]}, [170,25], [185,190], [185,520], [-185,520], [-185,190], [-170,25]]);
+G.sleeveR = build([[170,25], {q:[[285,110],[322,452]]}, [252,478], {q:[[225,300],[185,190]]}]);
+G.sleeveL = mirror(G.sleeveR);
+G.cuffR = [[322,452],[338,522],[270,546],[252,478]];
+G.cuffL = mirror(G.cuffR);
+G.band = [[-185,518],[185,518],[178,600],[-178,600]];
+G.hood = build([[-80,30], {q:[[-180,-150],[-60,-255]]}, {q:[[0,-292],[60,-255]]}, {q:[[180,-150],[80,30]]}]);
+G.hoodIn = build([[-50,30], {q:[[-118,-125],[-36,-205]]}, {q:[[0,-228],[36,-205]]}, {q:[[118,-125],[50,30]]}]);
+G.pocket = build([[-100,300],[100,300], {q:[[115,430],[172,462]]}, [172,506], [-172,506], [-172,462], {q:[[-115,430],[-100,300]]}]);
+
+const SE = {
+  pocket: closed(inset(G.pocket, 0.9, [0, 415])),
+  shL: [[-70,-10],[-170,25]], shR: [[70,-10],[170,25]],
+  neck: qb([-70,-10],[0,75],[70,-10],30),
+  armL: [[-170,25],[-185,190]], armR: [[170,25],[185,190]],
+  sideR: [...qb([252,478],[225,300],[185,190],20), [185,518]],
+  cuffR: [[322,452],[252,478]],
+  band: [[-185,518],[185,518]],
+};
+SE.sideL = mirror(SE.sideR); SE.cuffL = mirror(SE.cuffR);
+
+// piezas planas (patrón)
+const FL = {};
+FL.sleeve = build([[-130,110], {q:[[0,-40],[130,110]]}, [80,520], [-80,520]]);
+FL.hood = build([[0,380],[0,60], {q:[[30,0],[150,0]]}, {q:[[290,20],[290,200]]}, {q:[[285,340],[220,380]]}]);
+FL.pocket = G.pocket.map(([x,y]) => [x, y - 400]);
+
+// ---------- dibujo de elementos ----------
+function ribFill(pts, step = 13) {
+  ctx.save();
+  fillPts(pts, C.rib);
+  tracePts(pts); ctx.clip();
+  ctx.strokeStyle = 'rgba(255,255,255,0.10)'; ctx.lineWidth = 4;
+  const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
+  for (let x = Math.min(...xs) - 20; x < Math.max(...xs) + 20; x += step) {
+    ctx.beginPath(); ctx.moveTo(x, Math.min(...ys) - 5); ctx.lineTo(x + 6, Math.max(...ys) + 5); ctx.stroke();
+  }
+  ctx.restore();
+  fillPts(pts, null, C.line, 4);
+}
+
+function drawNeedle(x, y, t) {
+  const bob = (Math.sin(t * 28) * 0.5 + 0.5) * 16;
+  ctx.save();
+  ctx.translate(x, y - bob);
+  // hilo
+  ctx.strokeStyle = C.acc; ctx.lineWidth = 3; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(0, -104); ctx.quadraticCurveTo(60, -150, 40, -230); ctx.stroke();
+  // aguja
+  const g = ctx.createLinearGradient(-5, 0, 5, 0);
+  g.addColorStop(0, '#9AA3AF'); g.addColorStop(.5, '#F4F6F8'); g.addColorStop(1, '#8B94A1');
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.moveTo(-5, -120); ctx.lineTo(5, -120); ctx.lineTo(4, -12); ctx.lineTo(0, 0); ctx.lineTo(-4, -12); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = '#6E7682'; ctx.lineWidth = 1.5; ctx.stroke();
+  ctx.fillStyle = C.ink; ctx.beginPath(); ctx.ellipse(0, -106, 1.6, 6, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+  // destello en el punto
+  ctx.fillStyle = 'rgba(242,181,68,0.55)';
+  ctx.beginPath(); ctx.arc(x, y, 9 + Math.sin(t * 28) * 3, 0, Math.PI * 2); ctx.fill();
+}
+
+function drawStitch(pts, p, t, { needle = true, alpha = 1, color = C.stitch, w = 5 } = {}) {
+  if (p <= 0) return;
+  const q = partial(pts, clamp(p));
+  ctx.save();
+  ctx.globalAlpha *= alpha;
+  ctx.setLineDash([15, 10]); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.strokeStyle = color; ctx.lineWidth = w;
+  tracePts(q, false); ctx.stroke();
+  ctx.restore();
+  if (needle && p < 1) { const tip = q[q.length - 1]; drawNeedle(tip[0], tip[1], t); }
+}
+
+function drawHoodie(cx, cy, s, st, t) {
+  ctx.save(); ctx.translate(cx, cy); ctx.scale(s, s);
+  const grad = ctx.createLinearGradient(0, -280, 0, 600);
+  grad.addColorStop(0, C.fabL); grad.addColorStop(1, C.fab);
+  const fold = 'rgba(20,28,45,0.16)';
+
+  if (st.back) {
+    ctx.save(); ctx.globalAlpha = st.back.a ?? 1; ctx.translate(st.back.dx || 0, st.back.dy || 0);
+    shadow(1); fillPts(G.back, C.fabD); shadow(0); fillPts(G.back, null, C.line, 4);
+    ctx.restore();
+  }
+  if (st.hood) {
+    ctx.save(); ctx.globalAlpha = st.hood.a ?? 1; ctx.translate(0, st.hood.dy || 0);
+    shadow(1); fillPts(G.hood, grad); shadow(0); fillPts(G.hood, null, C.line, 4);
+    fillPts(G.hoodIn, C.inside);
+    tracePts(G.hoodIn); ctx.strokeStyle = C.fabL; ctx.lineWidth = 12; ctx.stroke();
+    tracePts(G.hoodIn); ctx.strokeStyle = C.line; ctx.lineWidth = 3; ctx.stroke();
+    ctx.restore();
+  }
+  if (st.sleeves) {
+    for (const [pts, k] of [[G.sleeveR, 1], [G.sleeveL, -1]]) {
+      ctx.save(); ctx.globalAlpha = st.sleeves.a ?? 1; ctx.translate(k * (st.sleeves.dx || 0), st.sleeves.dy || 0);
+      shadow(1); fillPts(pts, grad); shadow(0); fillPts(pts, null, C.line, 4);
+      ctx.strokeStyle = fold; ctx.lineWidth = 4; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(k*228, 230); ctx.quadraticCurveTo(k*250, 300, k*262, 350); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(k*270, 390); ctx.quadraticCurveTo(k*282, 410, k*300, 418); ctx.stroke();
+      ctx.restore();
+    }
+  }
+  if (st.cuffs) {
+    ctx.save(); ctx.globalAlpha = st.cuffs.a ?? 1; ctx.translate(0, st.cuffs.dy || 0);
+    shadow(1, 16, 8); fillPts(G.cuffR, C.rib); fillPts(G.cuffL, C.rib); shadow(0);
+    ribFill(G.cuffR); ribFill(G.cuffL);
+    ctx.restore();
+  }
+  if (st.torso) {
+    shadow(1); fillPts(G.torso, grad); shadow(0); fillPts(G.torso, null, C.line, 4);
+    ctx.strokeStyle = fold; ctx.lineWidth = 4; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(-150, 210); ctx.quadraticCurveTo(-140, 260, -146, 300); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(150, 210); ctx.quadraticCurveTo(140, 260, 146, 300); ctx.stroke();
+  }
+  if (st.band) {
+    ctx.save(); ctx.globalAlpha = st.band.a ?? 1; ctx.translate(0, st.band.dy || 0);
+    shadow(1, 16, 8); fillPts(G.band, C.rib); shadow(0); ribFill(G.band);
+    ctx.restore();
+  }
+  if (st.pocket) {
+    ctx.save(); ctx.globalAlpha = st.pocket.a ?? 1; ctx.translate(0, st.pocket.dy || 0);
+    shadow(1, 14, 6, 0.22); fillPts(G.pocket, C.fab); shadow(0); fillPts(G.pocket, null, C.line, 4);
+    ctx.restore();
+  }
+  if (st.strings) {
+    ctx.save(); ctx.globalAlpha = st.strings;
+    for (const k of [-1, 1]) {
+      ctx.fillStyle = '#C9CFDA'; ctx.beginPath(); ctx.arc(k*28, 24, 7, 0, Math.PI*2); ctx.fill();
+      ctx.strokeStyle = C.stitch; ctx.lineWidth = 9; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(k*28, 24); ctx.quadraticCurveTo(k*48, 110, k*(34 + (k>0?4:0)), 190); ctx.stroke();
+      ctx.fillStyle = C.acc; rr(k*(34 + (k>0?4:0)) - 7, 186, 14, 28, 5); ctx.fill();
+    }
+    ctx.restore();
+  }
+  for (const sm of (st.seams || [])) drawStitch(sm[0], sm[1], t, { alpha: sm[2] ?? 1, needle: sm[3] ?? true });
+  ctx.restore();
+}
+
+function drawScissors(x, y, ang, open, s = 1) {
+  ctx.save(); ctx.translate(x, y); ctx.rotate(ang); ctx.scale(s, s);
+  ctx.translate(-34, 0);
+  for (const k of [-1, 1]) {
+    ctx.save(); ctx.rotate(k * open);
+    // mango
+    ctx.strokeStyle = C.acc; ctx.lineWidth = 11; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-40, k * 18); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(-62, k * 26, 22, 15, k * 0.3, 0, Math.PI * 2); ctx.stroke();
+    // hoja
+    ctx.fillStyle = '#D3D8DF'; ctx.strokeStyle = '#7D8592'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(-6, -k * 2); ctx.lineTo(88, 0); ctx.lineTo(-6, k * 9); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.restore();
+  }
+  ctx.fillStyle = C.ink; ctx.beginPath(); ctx.arc(0, 0, 5, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+
+function background(dark = 0) {
+  ctx.fillStyle = C.bg; ctx.fillRect(0, 0, W, H);
+  ctx.strokeStyle = C.grid; ctx.lineWidth = 2;
+  for (let x = 60; x < W; x += 80) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+  for (let y = 40; y < H; y += 80) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+  if (dark > 0) { ctx.globalAlpha = dark; ctx.fillStyle = C.dark; ctx.fillRect(0, 0, W, H); ctx.globalAlpha = 1; }
+}
+
+// ---------- cabecera, subtítulo, progreso ----------
+const STEPS = 8;
+function header(lt, step, title) {
+  const a = eBack(seg(lt, 0, .45));
+  ctx.save();
+  ctx.translate(540, 190); ctx.scale(a, a);
+  ctx.font = '800 34px Inter'; ctx.letterSpacing = '4px';
+  const label = `PASO ${step}`; const w = ctx.measureText(label).width + 64;
+  ctx.fillStyle = C.acc; rr(-w/2, -34, w, 68, 34); ctx.fill();
+  ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(label, 2, 2);
+  ctx.restore();
+  const b = eOut(seg(lt, .1, .6));
+  ctx.save(); ctx.globalAlpha *= b;
+  ctx.font = '900 86px Inter'; ctx.letterSpacing = '-1px'; ctx.fillStyle = C.ink;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+  ctx.fillText(title, 540, 330 + (1 - b) * 40);
+  ctx.restore();
+}
+function caption(lt, text, dark = false) {
+  const a = eOut(seg(lt, .5, 1));
+  ctx.save(); ctx.globalAlpha *= a;
+  ctx.font = '600 44px Inter'; ctx.letterSpacing = '0px';
+  const lines = wrapLines(text, 860);
+  const h = 70 + lines.length * 60, y = 1600 - h / 2 + (1 - a) * 30;
+  shadow(1, 30, 10, 0.10);
+  ctx.fillStyle = dark ? '#33364F' : '#fff'; rr(70, y, 940, h, 40); ctx.fill();
+  shadow(0);
+  ctx.fillStyle = C.acc; rr(70, y + 26, 10, h - 52, 5); ctx.fill();
+  ctx.fillStyle = C.ink; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  lines.forEach((l, i) => ctx.fillText(l, 545, y + 35 + 30 + i * 60));
+  ctx.restore();
+}
+function progress(step) {
+  const gap = 46, total = (STEPS - 1) * gap + 40, x0 = 540 - total / 2;
+  let x = x0;
+  for (let i = 1; i <= STEPS; i++) {
+    const active = i === step, w = active ? 70 : 18;
+    ctx.fillStyle = i < step ? C.acc : active ? C.acc : '#D5C8B5';
+    ctx.globalAlpha = i < step ? 0.5 : 1;
+    rr(x, 1786, w, 18, 9); ctx.fill(); ctx.globalAlpha = 1;
+    x += w + 28;
+  }
+}
+
+// ---------- escenas ----------
+const FULL = () => ({ back: {}, hood: {}, sleeves: {}, cuffs: {}, torso: true, band: {}, pocket: {}, strings: 1 });
+const HX = 540, HY = 880, HS = 0.9;
+
+function sIntro(lt, d) {
+  const tt = eOut(seg(lt, 0, .5));
+  ctx.save(); ctx.globalAlpha *= tt;
+  ctx.textAlign = 'center';
+  ctx.font = '800 30px Inter'; ctx.letterSpacing = '6px';
+  const lbl = 'TUTORIAL DE COSTURA', w = ctx.measureText(lbl).width + 70;
+  ctx.fillStyle = C.ink; rr(540 - w/2, 170, w, 66, 33); ctx.fill();
+  ctx.fillStyle = '#fff'; ctx.textBaseline = 'middle'; ctx.fillText(lbl, 543, 205);
+  ctx.textBaseline = 'alphabetic'; ctx.letterSpacing = '-2px';
+  ctx.fillStyle = C.muted; ctx.font = '700 58px Inter'; ctx.fillText('Cose tu propia', 540, 340 + (1-tt)*30);
+  ctx.fillStyle = C.ink; ctx.font = '900 140px Inter'; ctx.fillText('Sudadera', 540, 480 + (1-tt)*40);
+  ctx.fillStyle = C.acc; ctx.font = '900 104px Inter'; ctx.fillText('con capucha', 540, 595 + (1-tt)*50);
+  ctx.restore();
+  // hilo decorativo
+  const thread = qb([-40, 700], [540, 560], [1120, 720], 60);
+  drawStitch(thread, eInOut(seg(lt, .2, 1.6)), lt, { needle: false, color: C.acc, w: 6, alpha: .8 });
+  const p = eBack(seg(lt, .35, 1.1));
+  const sway = Math.sin(lt * 2) * 0.02;
+  ctx.save(); ctx.translate(540, 1090); ctx.rotate(sway); ctx.scale(p, p);
+  drawHoodie(0, -40, 0.86, FULL(), lt);
+  ctx.restore();
+  const b = eOut(seg(lt, 1.1, 1.6));
+  ctx.save(); ctx.globalAlpha *= b; ctx.textAlign = 'center';
+  ctx.font = '700 50px Inter'; ctx.fillStyle = C.ink;
+  ctx.fillText('Para hombre · Paso a paso', 540, 1700 + (1-b)*30);
+  ctx.restore();
+}
+
+function card(x, y, w, h, a, label, icon) {
+  ctx.save();
+  ctx.translate(x + w/2, y + h/2); ctx.scale(a, a); ctx.translate(-w/2, -h/2);
+  shadow(1, 24, 8, 0.10); ctx.fillStyle = '#fff'; rr(0, 0, w, h, 36); ctx.fill(); shadow(0);
+  ctx.save(); ctx.translate(w/2, 110); icon(); ctx.restore();
+  ctx.fillStyle = C.ink; ctx.font = '700 36px Inter'; ctx.textAlign = 'center'; ctx.letterSpacing = '0px';
+  ctx.fillText(label, w/2, h - 38);
+  ctx.restore();
+}
+const ICONS = [
+  ['Felpa o french terry', () => {
+    const cols = [C.fabD, C.fab, C.fabL];
+    cols.forEach((c, i) => { ctx.fillStyle = c; rr(-90, 30 - i*30, 180, 46, 14); ctx.fill(); });
+    ctx.strokeStyle = 'rgba(255,255,255,.25)'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(-70, -30); ctx.lineTo(70, -30); ctx.stroke();
+  }],
+  ['Rib para puños', () => {
+    ctx.fillStyle = C.rib; rr(-90, -60, 180, 120, 16); ctx.fill();
+    ctx.save(); rr(-90, -60, 180, 120, 16); ctx.clip();
+    ctx.strokeStyle = 'rgba(255,255,255,.18)'; ctx.lineWidth = 5;
+    for (let x = -84; x < 90; x += 16) { ctx.beginPath(); ctx.moveTo(x, -60); ctx.lineTo(x, 60); ctx.stroke(); }
+    ctx.restore();
+  }],
+  ['Hilo resistente', () => {
+    ctx.fillStyle = '#C08A57'; rr(-60, -70, 120, 22, 8); ctx.fill(); rr(-60, 48, 120, 22, 8); ctx.fill();
+    ctx.fillStyle = C.acc; rr(-44, -48, 88, 96, 6); ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,.3)'; ctx.lineWidth = 3;
+    for (let y = -36; y < 48; y += 14) { ctx.beginPath(); ctx.moveTo(-44, y); ctx.lineTo(44, y + 6); ctx.stroke(); }
+    ctx.strokeStyle = C.acc; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(44, 20); ctx.quadraticCurveTo(100, 30, 90, 70); ctx.stroke();
+  }],
+  ['Tijeras de tela', () => drawScissors(20, 0, -0.5, 0.22, 1.05)],
+  ['Alfileres o clips', () => {
+    [[-50, C.acc], [0, C.acc2], [50, '#6BA292']].forEach(([x, c], i) => {
+      ctx.strokeStyle = '#8B94A1'; ctx.lineWidth = 4; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(x, -40); ctx.lineTo(x + 18, 60); ctx.stroke();
+      ctx.fillStyle = c; ctx.beginPath(); ctx.arc(x, -46, 16, 0, Math.PI*2); ctx.fill();
+    });
+  }],
+  ['Aguja de punto', () => {
+    ctx.save(); ctx.rotate(0.6); ctx.translate(0, 60);
+    const g = ctx.createLinearGradient(-6, 0, 6, 0); g.addColorStop(0, '#9AA3AF'); g.addColorStop(.5, '#F4F6F8'); g.addColorStop(1, '#8B94A1');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(-6, -140); ctx.lineTo(6, -140); ctx.lineTo(5, -14); ctx.lineTo(0, 0); ctx.lineTo(-5, -14); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = '#6E7682'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillStyle = C.ink; ctx.beginPath(); ctx.ellipse(0, -124, 2, 8, 0, 0, Math.PI*2); ctx.fill();
+    ctx.restore();
+    ctx.strokeStyle = C.acc; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(-58, -40); ctx.bezierCurveTo(-110, -10, -40, 60, -90, 70); ctx.stroke();
+  }],
+];
+function sMaterials(lt) {
+  header(lt, 1, 'Materiales');
+  ICONS.forEach(([label, icon], i) => {
+    const col = i % 2, row = Math.floor(i / 2);
+    const a = eBack(seg(lt, .4 + i * .18, .9 + i * .18));
+    if (a > 0) card(90 + col * 480, 450 + row * 320, 420, 290, a, label, icon);
+  });
+  caption(lt, 'Elige felpa o french terry y rib elástico para puños y pretina.');
+}
+
+const FAB = { cx: 540, cy: 960 };
+const PIECES = [
+  { name: 'Delantero', pts: xf(G.torso, -185, -410, .58), lx: -185, ly: -255 },
+  { name: 'Espalda', pts: xf(G.back, 185, -410, .58), lx: 185, ly: -255 },
+  { name: 'Manga', pts: xf(FL.sleeve, -290, -40, .52), lx: -290, ly: 120 },
+  { name: 'Manga', pts: xf(FL.sleeve, -130, -40, .52), lx: -130, ly: 120 },
+  { name: 'Capucha', pts: xf(FL.hood, 20, -40, .55), lx: 100, ly: 80 },
+  { name: 'Capucha', pts: xf(FL.hood, 360, -40, .55, -1), lx: 280, ly: 80 },
+  { name: 'Bolsillo', pts: xf(FL.pocket, -230, 345, .62), lx: -230, ly: 352 },
+];
+const RIB = [
+  { name: 'Pretina', r: [-40, 270, 380, 70] },
+  { name: 'Puño', r: [-40, 360, 175, 70] },
+  { name: 'Puño', r: [165, 360, 175, 70] },
+];
+function sCut(lt) {
+  header(lt, 2, 'Corta las piezas');
+  const fa = eOut(seg(lt, .2, .7));
+  ctx.save(); ctx.globalAlpha *= fa; ctx.translate(FAB.cx, FAB.cy + (1 - fa) * 60);
+  shadow(1, 30, 12, 0.15);
+  ctx.fillStyle = C.fab; rr(-390, -470, 780, 920, 24); ctx.fill(); shadow(0);
+  ctx.strokeStyle = 'rgba(255,255,255,0.05)'; ctx.lineWidth = 2;
+  for (let y = -460; y < 450; y += 10) { ctx.beginPath(); ctx.moveTo(-390, y); ctx.lineTo(390, y); ctx.stroke(); }
+  // zona de rib
+  ctx.fillStyle = C.rib; rr(-60, 250, 420, 190, 14); ctx.fill();
+  ctx.save(); rr(-60, 250, 420, 190, 14); ctx.clip();
+  ctx.strokeStyle = 'rgba(255,255,255,.08)'; ctx.lineWidth = 4;
+  for (let x = -60; x < 360; x += 13) { ctx.beginPath(); ctx.moveTo(x, 250); ctx.lineTo(x, 440); ctx.stroke(); }
+  ctx.restore();
+  const cutStart = 2.1, cutEnd = 5.2;
+  const cutP = eInOut(seg(lt, cutStart, cutEnd));
+  const lift = eOut(seg(lt, 5.3, 5.9));
+  const all = [...PIECES.map(p => ({ ...p, kind: 'p' })), ...RIB.map(r => ({ ...r, kind: 'r' }))];
+  all.forEach((pc, i) => {
+    const a = eOut(seg(lt, .6 + i * .12, 1.0 + i * .12));
+    if (a <= 0) return;
+    ctx.save(); ctx.globalAlpha *= a; ctx.translate(0, (1 - a) * -30);
+    if (i === 0 && lift > 0) { ctx.translate(-14 * lift, -22 * lift); shadow(1, 30 * lift, 16 * lift, .25); }
+    ctx.fillStyle = 'rgba(255,255,255,0.93)';
+    if (pc.kind === 'p') { tracePts(pc.pts); ctx.fill(); }
+    else { rr(...pc.r, 6); ctx.fill(); }
+    shadow(0);
+    ctx.strokeStyle = C.ink; ctx.lineWidth = 3; ctx.setLineDash(i === 0 && cutP >= 1 ? [] : [10, 8]);
+    if (pc.kind === 'p') tracePts(pc.pts); else rr(...pc.r, 6);
+    ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = C.muted; ctx.font = '700 26px Inter'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    if (pc.kind === 'p') ctx.fillText(pc.name, pc.lx, pc.ly);
+    else ctx.fillText(pc.name, pc.r[0] + pc.r[2] / 2, pc.r[1] + pc.r[3] / 2);
+    ctx.restore();
+  });
+  // corte
+  const path = closed(PIECES[0].pts);
+  if (cutP > 0 && cutP < 1) {
+    const q = partial(path, cutP);
+    ctx.strokeStyle = C.acc; ctx.lineWidth = 6; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    tracePts(q, false); ctx.stroke();
+    const { pt, ang } = tangentAt(path, cutP);
+    drawScissors(pt[0], pt[1], ang, 0.08 + Math.abs(Math.sin(lt * 14)) * 0.28, 1.15);
+  }
+  ctx.restore();
+  caption(lt, 'Coloca el patrón siguiendo el hilo de la tela y corta todas las piezas.');
+}
+
+function sPocket(lt) {
+  header(lt, 3, 'Bolsillo canguro');
+  const a = eOut(seg(lt, .3, 1.2));
+  drawHoodie(HX, HY, HS, {
+    torso: true,
+    pocket: { dy: (1 - eBack(seg(lt, .3, 1.2))) * 420, a: seg(lt, .3, .6) },
+    seams: [[SE.pocket, eInOut(seg(lt, 1.5, 4.3))]],
+  }, lt);
+  caption(lt, 'Dobla los bordes del bolsillo y pespúntalo sobre el delantero.');
+}
+function sShoulders(lt) {
+  header(lt, 4, 'Une los hombros');
+  const e = eOut(seg(lt, .2, 1.2));
+  const p = eInOut(seg(lt, 1.5, 3.8));
+  drawHoodie(HX, HY, HS, {
+    back: { dx: (1 - e) * 300, dy: (1 - e) * -40, a: seg(lt, .2, .5) },
+    torso: true, pocket: {},
+    seams: [[SE.pocket, 1, .6, false], [SE.shL, p, 1, false], [SE.shR, p, 1, true]],
+  }, lt);
+  caption(lt, 'Delantero y espalda derecho con derecho. Cose por los hombros.');
+}
+function sHood(lt) {
+  header(lt, 5, 'La capucha');
+  const e = eBack(seg(lt, .2, 1.2));
+  const prev = [[SE.pocket, 1, .6, false], [SE.shL, 1, .6, false], [SE.shR, 1, .6, false]];
+  drawHoodie(HX, HY, HS, {
+    back: {}, hood: { dy: (1 - e) * -320, a: seg(lt, .2, .5) }, torso: true, pocket: {},
+    seams: [...prev, [SE.neck, eInOut(seg(lt, 1.6, 4.2))]],
+  }, lt);
+  caption(lt, 'Cose el centro de la capucha y únela al escote.');
+}
+function sSleeves(lt) {
+  header(lt, 6, 'Las mangas');
+  const e = eBack(seg(lt, .2, 1.2));
+  const p = eInOut(seg(lt, 1.5, 3.8));
+  const prev = [[SE.pocket, 1, .6, false], [SE.shL, 1, .6, false], [SE.shR, 1, .6, false], [SE.neck, 1, .6, false]];
+  drawHoodie(HX, HY, HS, {
+    back: {}, hood: {}, sleeves: { dx: (1 - e) * 280, a: seg(lt, .2, .5) }, torso: true, pocket: {},
+    seams: [...prev, [SE.armL, p, 1, false], [SE.armR, p, 1, true]],
+  }, lt);
+  caption(lt, 'Prende la manga a la sisa: su centro coincide con la costura del hombro.');
+}
+function sSides(lt) {
+  header(lt, 7, 'Cierra costados');
+  const p = eInOut(seg(lt, .5, 3.8));
+  const prev = [SE.pocket, SE.shL, SE.shR, SE.neck, SE.armL, SE.armR].map(s => [s, 1, .6, false]);
+  drawHoodie(HX, HY, HS, {
+    back: {}, hood: {}, sleeves: {}, torso: true, pocket: {},
+    seams: [...prev, [SE.sideL, p, 1, false], [SE.sideR, p, 1, true]],
+  }, lt);
+  caption(lt, 'Un solo pespunte desde el puño de la manga hasta el bajo.');
+}
+function sRib(lt) {
+  header(lt, 8, 'Puños y pretina');
+  const c = eBack(seg(lt, .2, 1.0)), b = eBack(seg(lt, .4, 1.2));
+  const p = eInOut(seg(lt, 1.4, 3.8));
+  const prev = [SE.pocket, SE.shL, SE.shR, SE.neck, SE.armL, SE.armR, SE.sideL, SE.sideR].map(s => [s, 1, .6, false]);
+  drawHoodie(HX, HY, HS, {
+    back: {}, hood: {}, sleeves: {}, torso: true, pocket: {},
+    cuffs: { dy: (1 - c) * 160, a: seg(lt, .2, .4) },
+    band: { dy: (1 - b) * 200, a: seg(lt, .4, .6) },
+    strings: eOut(seg(lt, 4.0, 4.8)),
+    seams: [...prev, [SE.cuffL, p, 1, false], [SE.cuffR, p, 1, false], [SE.band, p, 1, true]],
+  }, lt);
+  caption(lt, 'Estira el rib mientras coses para un acabado ajustado.');
+}
+function star(x, y, r, a) {
+  ctx.save(); ctx.translate(x, y); ctx.scale(r, r); ctx.globalAlpha *= a;
+  ctx.fillStyle = C.acc2; ctx.beginPath();
+  for (let i = 0; i < 8; i++) { const ang = i * Math.PI / 4, rad = i % 2 ? .28 : 1; ctx.lineTo(Math.sin(ang) * rad, -Math.cos(ang) * rad); }
+  ctx.closePath(); ctx.fill(); ctx.restore();
+}
+function sFinal(lt) {
+  const a = eBack(seg(lt, 0, .45));
+  ctx.save(); ctx.translate(540, 190); ctx.scale(a, a);
+  ctx.font = '800 34px Inter'; ctx.letterSpacing = '4px';
+  const w = ctx.measureText('RESULTADO').width + 64;
+  ctx.fillStyle = C.ink; rr(-w/2, -34, w, 68, 34); ctx.fill();
+  ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('RESULTADO', 2, 2);
+  ctx.restore();
+  const b = eOut(seg(lt, .1, .6));
+  ctx.save(); ctx.globalAlpha *= b; ctx.textAlign = 'center';
+  ctx.font = '900 86px Inter'; ctx.letterSpacing = '-1px'; ctx.fillStyle = C.ink;
+  ctx.fillText('¡Lista para estrenar!', 540, 330 + (1 - b) * 40);
+  ctx.restore();
+  const pop = 1 + Math.sin(seg(lt, 0, .6) * Math.PI) * 0.06;
+  ctx.save(); ctx.translate(HX, HY + 250); ctx.scale(pop, pop); ctx.rotate(Math.sin(lt * 2.2) * 0.015);
+  drawHoodie(0, -250, HS, FULL(), lt); ctx.restore();
+  [[200, 640, 34, 0], [880, 600, 44, .4], [150, 1180, 28, .8], [930, 1250, 36, 1.1], [820, 900, 22, .6]].forEach(([x, y, r, d]) => {
+    const s = Math.max(0, Math.sin((lt - d) * 3));
+    if (lt > d) star(x, y, r * (0.4 + s * 0.6), s);
+  });
+  caption(lt, 'Cómoda, resistente y hecha por ti.');
+}
+
+function drawPDF(cx, cy, ang, s, t) {
+  ctx.save(); ctx.translate(cx, cy); ctx.rotate(ang); ctx.scale(s, s);
+  const w = 460, h = 600;
+  [[26, 20, '#D9D3C8'], [13, 10, '#ECE7DE']].forEach(([dx, dy, c]) => {
+    ctx.fillStyle = c; rr(-w/2 + dx, -h/2 + dy, w, h, 18); ctx.fill();
+  });
+  shadow(1, 50, 24, 0.35); ctx.fillStyle = '#fff'; rr(-w/2, -h/2, w, h, 18); ctx.fill(); shadow(0);
+  ctx.save(); rr(-w/2, -h/2, w, h, 18); ctx.clip();
+  ctx.fillStyle = C.acc; ctx.fillRect(-w/2, -h/2, w, 170);
+  ctx.restore();
+  ctx.textAlign = 'center'; ctx.fillStyle = '#fff';
+  ctx.font = '800 22px Inter'; ctx.letterSpacing = '4px'; ctx.fillText(CONFIG.portadaLinea1, 0, -h/2 + 52);
+  ctx.letterSpacing = '-1px'; ctx.font = '900 40px Inter';
+  ctx.fillText(CONFIG.portadaLinea2, 0, -h/2 + 104); ctx.fillText(CONFIG.portadaLinea3, 0, -h/2 + 148);
+  ctx.save(); ctx.beginPath(); ctx.rect(-w/2, -h/2 + 170, w, h - 170); ctx.clip();
+  drawHoodie(0, 0, 0.36, FULL(), t);
+  ctx.restore();
+  ctx.fillStyle = '#E6E0D6';
+  [[-170, 240, 200], [-170, 262, 260]].forEach(([x, y, l]) => { rr(x, y, l, 10, 5); ctx.fill(); });
+  // sello PDF
+  ctx.save(); ctx.translate(w/2 - 20, h/2 - 30); ctx.rotate(0.2);
+  ctx.fillStyle = C.ink; ctx.beginPath(); ctx.arc(0, 0, 58, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#fff'; ctx.font = '900 36px Inter'; ctx.letterSpacing = '1px'; ctx.textBaseline = 'middle'; ctx.fillText('PDF', 0, 2);
+  ctx.restore();
+  ctx.restore();
+}
+function sCTA(lt, d) {
+  const bg = eOut(seg(lt, 0, .5));
+  ctx.save(); ctx.globalAlpha = bg; ctx.fillStyle = C.dark; ctx.fillRect(0, 0, W, H); ctx.restore();
+  const a = eOut(seg(lt, .3, .8));
+  ctx.save(); ctx.globalAlpha *= a; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+  ctx.fillStyle = 'rgba(245,239,230,0.75)'; ctx.font = '600 46px Inter'; ctx.letterSpacing = '0px';
+  ctx.fillText(CONFIG.ctaPregunta, 540, 230 + (1-a)*30);
+  ctx.fillStyle = '#fff'; ctx.font = '900 92px Inter'; ctx.letterSpacing = '-2px';
+  ctx.fillText(CONFIG.ctaTitulo1, 540, 345 + (1-a)*40);
+  ctx.fillStyle = C.acc; ctx.fillText(CONFIG.ctaTitulo2, 540, 445 + (1-a)*50);
+  ctx.restore();
+  const pp = eBack(seg(lt, .6, 1.4));
+  if (pp > 0) drawPDF(540, 850 + Math.sin(lt * 2) * 10, -0.05 + Math.sin(lt * 1.5) * 0.015, pp * 0.95, lt);
+  CONFIG.beneficios.forEach((txt, i) => {
+    const b = eOut(seg(lt, 1.5 + i * .25, 2.0 + i * .25));
+    if (b <= 0) return;
+    ctx.save(); ctx.globalAlpha *= b; ctx.translate((1 - b) * -40, 0);
+    const y = 1250 + i * 86;
+    ctx.fillStyle = C.acc; ctx.beginPath(); ctx.arc(200, y, 26, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 6; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.beginPath(); ctx.moveTo(188, y); ctx.lineTo(197, y + 10); ctx.lineTo(213, y - 9); ctx.stroke();
+    ctx.fillStyle = '#fff'; ctx.font = '600 44px Inter'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.letterSpacing = '0px';
+    ctx.fillText(txt, 250, y + 2);
+    ctx.restore();
+  });
+  const bt = eBack(seg(lt, 2.6, 3.2));
+  if (bt > 0) {
+    const pulse = 1 + Math.max(0, Math.sin((lt - 3.2) * 5)) * 0.04 * (lt > 3.2);
+    ctx.save(); ctx.translate(540, 1590); ctx.scale(bt * pulse, bt * pulse);
+    shadow(1, 40, 14, 0.45);
+    ctx.fillStyle = C.acc; rr(-360, -70, 720, 140, 70); ctx.fill(); shadow(0);
+    ctx.fillStyle = '#fff'; ctx.font = '900 56px Inter'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.letterSpacing = '-1px';
+    ctx.fillText(CONFIG.boton, 0, 3);
+    ctx.restore();
+  }
+  const l = eOut(seg(lt, 3.2, 3.7));
+  ctx.save(); ctx.globalAlpha *= l; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = C.acc2; ctx.font = '700 44px Inter'; ctx.letterSpacing = '0px';
+  const ly = 1745 + Math.sin(lt * 4) * 6;
+  ctx.fillText(CONFIG.enlace, 540, ly);
+  const tw = ctx.measureText(CONFIG.enlace).width;
+  ctx.strokeStyle = C.acc2; ctx.lineWidth = 6; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(540 - tw/2 - 70, ly); ctx.lineTo(540 - tw/2 - 25, ly);
+  ctx.moveTo(540 - tw/2 - 42, ly - 15); ctx.lineTo(540 - tw/2 - 25, ly); ctx.lineTo(540 - tw/2 - 42, ly + 15); ctx.stroke();
+  ctx.restore();
+}
+
+const SCENES = [
+  { d: 4.5, f: sIntro },
+  { d: 5.5, f: sMaterials, step: 1 },
+  { d: 6.2, f: sCut, step: 2 },
+  { d: 5.0, f: sPocket, step: 3 },
+  { d: 4.6, f: sShoulders, step: 4 },
+  { d: 5.0, f: sHood, step: 5 },
+  { d: 4.6, f: sSleeves, step: 6 },
+  { d: 4.4, f: sSides, step: 7 },
+  { d: 5.2, f: sRib, step: 8 },
+  { d: 4.0, f: sFinal },
+  { d: 7.5, f: sCTA, last: true },
+];
+const TOTAL = SCENES.reduce((a, s) => a + s.d, 0);
+window.TOTAL = TOTAL;
+
+window.renderFrame = function (t) {
+  let acc = 0, idx = 0;
+  while (idx < SCENES.length - 1 && t >= acc + SCENES[idx].d) { acc += SCENES[idx].d; idx++; }
+  const sc = SCENES[idx], lt = t - acc;
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.globalAlpha = 1; ctx.setLineDash([]); shadow(0);
+  background();
+  if (sc.step) progress(sc.step);
+  const fade = sc.last ? 1 : clamp((sc.d - lt) / 0.3);
+  ctx.save(); ctx.globalAlpha = fade;
+  sc.f(lt, sc.d);
+  ctx.restore();
+};
+
+// vista previa en navegador
+if (!navigator.webdriver) {
+  const start = performance.now();
+  const loop = () => { window.renderFrame(((performance.now() - start) / 1000) % TOTAL); requestAnimationFrame(loop); };
+  document.fonts.ready.then(loop);
+}
+</script>
+</body>
+</html>
