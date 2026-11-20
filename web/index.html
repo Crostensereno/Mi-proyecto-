@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Hilván: patrones de costura en PDF fáciles de entender, con manual paso a paso y cada talla en su color.">
+<title>Hilván Patrones</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,300..700&family=Inter:wght@400;500&display=swap">
+<style>
+/* Layout: tienda de moda. Mucho blanco, rejilla de producto a 4 columnas, cada foto es mitad prenda y mitad patrón. */
+:root{
+  --bg:#ffffff;
+  --panel:#f3f3f2;
+  --ink:#111111;
+  --grey:#707070;
+  --line:#e4e4e2;
+  --shade:rgba(17,17,17,.4);
+  --f-display:"Archivo","Helvetica Neue",Arial,sans-serif;
+  --f-body:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f0f0f;--panel:#1a1a1a;--ink:#f2f2f0;--grey:#9b9b98;--line:#2a2a29;--shade:rgba(0,0,0,.6);color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0f0f0f;--panel:#1a1a1a;--ink:#f2f2f0;--grey:#9b9b98;--line:#2a2a29;--shade:rgba(0,0,0,.6);color-scheme:dark}
+
+*{box-sizing:border-box}
+html{background:var(--bg)}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.5;margin:0;overflow-x:clip}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--bg)}
+a{color:inherit;text-decoration:none}
+button,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.gut{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.inner{max-width:1440px;margin:0 auto}
+.up{font-size:11px;letter-spacing:.12em;text-transform:uppercase}
+
+/* Barra de aviso y cabecera */
+.notice{background:var(--ink);color:var(--bg);text-align:center;padding-block:8px;padding-inline:16px;font-size:11px;letter-spacing:.1em;text-transform:uppercase}
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:25;background:var(--bg);border-bottom:1px solid var(--line)}
+.top .inner{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:16px;padding-block:18px}
+.menu{display:flex;gap:22px}
+.menu a{font-size:13px}
+.menu a:hover,.tools button:hover{text-decoration:underline;text-underline-offset:4px}
+.logo{font-family:var(--f-display);font-stretch:125%;font-weight:600;font-size:22px;letter-spacing:.32em;padding-left:.32em}
+.tools{display:flex;justify-content:flex-end;gap:20px}
+.tools button{background:none;border:0;padding:0;cursor:pointer;font-size:13px;font-variant-numeric:tabular-nums}
+.burger{font-size:13px}
+.burger:hover{text-decoration:underline;text-underline-offset:4px}
+
+/* Portada */
+.hero{position:relative;overflow:hidden;background:var(--panel)}
+.hero img{display:block;width:100%;height:clamp(340px,46vw,640px);object-fit:cover;object-position:70% 50%}
+.hero .copy{position:absolute;inset:0;display:flex;align-items:center;padding-block:clamp(24px,5vw,64px)}
+.hero .copy .inner{width:100%}
+.hero .copy .inner{display:grid;gap:14px;justify-items:start}
+.hero h1{font-family:var(--f-display);font-stretch:112%;font-weight:400;font-size:clamp(32px,4.4vw,64px);line-height:1;letter-spacing:-.02em;margin:0;max-width:12ch;color:#111}
+.hero .up{color:#111}
+.cta{display:inline-block;background:#111;color:#fff;padding:13px 26px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;border:0;cursor:pointer}
+.cta:hover{background:#333}
+
+/* Barra de categorías */
+.bar .inner{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;padding-block:28px 18px}
+.cats{display:flex;gap:6px 22px;flex-wrap:wrap}
+.cats button{background:none;border:0;padding:4px 0;cursor:pointer;font-size:13px;color:var(--grey);border-bottom:1px solid transparent}
+.cats button[aria-pressed="true"]{color:var(--ink);border-bottom-color:var(--ink)}
+.sort{display:flex;align-items:center;gap:10px;color:var(--grey);font-size:13px}
+.sort select{background:var(--bg);border:1px solid var(--line);padding:7px 10px;border-radius:0}
+.count{color:var(--grey);font-size:13px}
+
+/* Rejilla de producto */
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:32px 14px;padding-bottom:72px}
+.card{min-width:0;cursor:pointer}
+.card .ph{position:relative;aspect-ratio:3/4;overflow:hidden;background:var(--panel)}
+.card img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .9s cubic-bezier(.2,.7,.2,1)}
+.card:hover img{transform:scale(1.035)}
+.badge{position:absolute;left:10px;top:10px;background:#fff;color:#111;font-size:10px;letter-spacing:.12em;text-transform:uppercase;padding:4px 8px}
+.quick{position:absolute;left:10px;right:10px;bottom:10px;background:#fff;color:#111;border:0;padding:11px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;transform:translateY(calc(100% + 12px));transition:transform .35s ease}
+.card:hover .quick,.quick:focus-visible{transform:none}
+.card .meta{display:flex;justify-content:space-between;gap:12px;padding-top:12px}
+.card h3{font-size:13px;font-weight:500;margin:0}
+.card .sub{color:var(--grey);font-size:12px;margin-top:2px}
+.card .price{font-size:13px;font-variant-numeric:tabular-nums;white-space:nowrap}
+
+/* Ventajas */
+.perks{border-top:1px solid var(--line)}
+.perks .inner{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;padding-block:40px}
+.perks b{display:block;font-weight:500;margin-bottom:4px}
+.perks p{margin:0;color:var(--grey);max-width:34ch}
+
+footer{border-top:1px solid var(--line)}
+footer .inner{display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;padding-block:40px 48px;color:var(--grey);font-size:12px}
+footer .cols{display:flex;gap:56px;flex-wrap:wrap}
+footer .cols div{display:grid;gap:6px}
+footer .cols b{color:var(--ink);font-weight:500;margin-bottom:4px}
+
+/* Ficha lateral */
+.scrim{position:fixed;inset:0;background:var(--shade);z-index:40;opacity:0;pointer-events:none;transition:opacity .35s}
+.scrim.open{opacity:1;pointer-events:auto}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(520px,100%);background:var(--bg);z-index:41;transform:translateX(100%);transition:transform .45s cubic-bezier(.2,.7,.2,1);display:flex;flex-direction:column;overflow-y:auto;
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);padding-right:env(safe-area-inset-right,0px)}
+.drawer.open{transform:none}
+.drawer .ph{aspect-ratio:3/4;background:var(--panel);flex-shrink:0;max-height:62svh}
+.drawer .ph img{width:100%;height:100%;object-fit:contain;display:block}
+.drawer .body{padding:22px 24px 28px;display:grid;gap:16px}
+.drawer h2{font-family:var(--f-display);font-stretch:110%;font-weight:500;font-size:22px;margin:0}
+.drawer .row{display:flex;justify-content:space-between;align-items:baseline;gap:16px}
+.drawer p{margin:0;color:var(--grey)}
+.opts{display:flex;gap:8px;flex-wrap:wrap}
+.opts button{border:1px solid var(--line);background:var(--bg);padding:9px 14px;cursor:pointer;font-size:12px}
+.opts button[aria-pressed="true"]{border-color:var(--ink)}
+.close{position:absolute;top:calc(12px + env(safe-area-inset-top,0px));right:calc(12px + env(safe-area-inset-right,0px));background:#fff;color:#111;border:0;width:36px;height:36px;font-size:18px;cursor:pointer}
+.inc{margin:0;color:var(--ink)}
+.add.off{background:var(--panel);color:var(--grey);cursor:default}
+.card .quick{text-align:center;text-decoration:none}
+.add{display:block;text-align:center;text-decoration:none;background:var(--ink);color:var(--bg);border:0;padding:15px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;width:100%}
+.spec{border-top:1px solid var(--line);display:grid}
+.spec div{display:flex;justify-content:space-between;gap:16px;padding-block:10px;border-bottom:1px solid var(--line)}
+.spec span:first-child{color:var(--grey)}
+
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translate(-50%,calc(100% + 40px));background:var(--ink);color:var(--bg);padding:12px 20px;font-size:13px;z-index:50;transition:transform .35s ease,visibility .35s;visibility:hidden}
+.toast.show{transform:translate(-50%,0);visibility:visible}
+
+
+/* Cesta y pago */
+.cp-head{display:flex;justify-content:space-between;align-items:center;padding:16px 20px 16px 24px;border-bottom:1px solid var(--line)}
+.cp-head b{font-size:12px;letter-spacing:.12em;text-transform:uppercase;font-weight:500}
+.x{background:none;border:0;font-size:18px;cursor:pointer;width:36px;height:36px}
+.cp-steps{display:flex;padding:0 24px;border-bottom:1px solid var(--line)}
+.cp-steps span{flex:1;padding:12px 0;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--grey);border-bottom:2px solid transparent;text-align:center}
+.cp-steps span.on{color:var(--ink);border-bottom-color:var(--ink)}
+.cp-steps span.done{color:var(--ink)}
+.cp-body{flex:1;padding:4px 24px 24px}
+.cp-foot{border-top:1px solid var(--line);padding:18px 24px 24px;display:grid;gap:12px;background:var(--bg);position:sticky;bottom:0}
+.line{display:grid;grid-template-columns:72px minmax(0,1fr) auto;gap:14px;padding-block:16px;border-bottom:1px solid var(--line);align-items:start;font-variant-numeric:tabular-nums}
+.line img{width:72px;aspect-ratio:3/4;object-fit:cover;background:var(--panel)}
+.line b{font-weight:500;display:block}
+.line .s{display:block;color:var(--grey);font-size:12px}
+.rm{background:none;border:0;padding:0;margin-top:8px;font-size:12px;color:var(--grey);text-decoration:underline;cursor:pointer}
+.tot{display:flex;justify-content:space-between;gap:12px;font-variant-numeric:tabular-nums}
+.tot.big{font-size:16px;font-weight:500}
+.muted{color:var(--grey);font-size:12px;margin:0}
+.empty{padding:56px 0;text-align:center;color:var(--grey);display:grid;gap:16px;justify-items:center}
+.sec{font-size:11px;letter-spacing:.12em;text-transform:uppercase;margin:24px 0 0}
+.field{display:grid;gap:6px;margin-top:14px}
+.field label{font-size:12px;color:var(--grey)}
+.field input{border:1px solid var(--line);background:var(--bg);color:var(--ink);padding:12px;font:inherit;border-radius:0}
+.field input:focus{outline:none;border-color:var(--ink)}
+.pays{display:grid;gap:8px;margin-top:12px}
+.pay{display:flex;align-items:center;gap:12px;border:1px solid var(--line);padding:12px 14px;cursor:pointer}
+.pay input{accent-color:var(--ink)}
+.pay:has(input:checked){border-color:var(--ink)}
+.cardbox{border:1px dashed var(--line);padding:14px;margin-top:8px;font-size:12px;color:var(--grey);display:grid;gap:6px}
+.cardbox .fake{font-family:ui-monospace,Menlo,Consolas,monospace;color:var(--ink);letter-spacing:.08em}
+.terms{display:flex;gap:10px;align-items:flex-start;margin-top:20px;font-size:12px;color:var(--grey);cursor:pointer}
+.terms input{accent-color:var(--ink);margin-top:2px}
+.err{font-size:13px;font-weight:500;margin:12px 0 0}
+.ok{display:grid;gap:12px;padding-top:24px}
+.ok h3{font-family:var(--f-display);font-stretch:110%;font-weight:500;font-size:24px;margin:0}
+.dl{display:flex;justify-content:space-between;align-items:center;gap:12px;border:1px solid var(--line);padding:12px 14px}
+.dl b{font-weight:500}
+.dl button{background:none;border:1px solid var(--ink);padding:8px 12px;font-size:12px;cursor:pointer;white-space:nowrap}
+.ghostbtn{background:none;border:0;text-decoration:underline;text-underline-offset:3px;cursor:pointer;color:var(--grey);font-size:13px;padding:0;justify-self:center}
+@media (max-width:1000px){.grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:760px){
+  .menu{display:none}
+  .burger{display:inline}
+  .top .inner{padding-block:14px}
+  .logo{font-size:18px}
+  .tools .hide-s{display:none}
+  .grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:24px 10px}
+  .quick{display:none}
+  .card .meta{flex-direction:column;gap:2px}
+  .notice{font-size:10px}
+  .perks .inner{grid-template-columns:1fr}
+  .hero img{object-position:78% 50%}
+  .hero .copy{position:static;background:var(--bg)}
+  .hero h1,.hero .up{color:var(--ink)}
+}
+@media (prefers-reduced-motion:reduce){.card img,.quick,.drawer,.scrim,.toast{transition:none}}
+</style>
+</head>
+<body>
+
+<div class="notice">Descarga inmediata · Margen de costura incluido · Manual paso a paso</div>
+
+<header class="top gut">
+  <div class="inner">
+    <div>
+      <a class="burger" href="#catalogo">Catálogo</a>
+    </div>
+    <a class="logo" href="#">HILVÁN</a>
+    <div class="tools">
+      <a class="burger" href="#ayuda">Ayuda</a>
+    </div>
+  </div>
+</header>
+
+<section class="hero">
+  <img src="img/hero.jpg" alt="Abrigo largo gris: la mitad izquierda es la prenda real y la derecha su patrón de costura" id="heroImg">
+  <div class="copy gut">
+    <div class="inner">
+      <span class="up">Patrones de costura en PDF</span>
+      <h1>Patrones fáciles de entender, para coser tu ropa</h1>
+      <a class="cta" href="#catalogo">Ver patrones</a>
+    </div>
+  </div>
+</section>
+
+<main id="catalogo">
+  <div class="bar gut">
+    <div class="inner">
+      <div class="cats" id="cats" role="group" aria-label="Filtrar">
+        <button type="button" aria-pressed="true" data-f="all">Todo</button>
+        <button type="button" aria-pressed="false" data-f="abrigos">Chaquetas y abrigos</button>
+        <button type="button" aria-pressed="false" data-f="bajos">Pantalones y faldas</button>
+        <button type="button" aria-pressed="false" data-f="camisas">Camisas y vestidos</button>
+      </div>
+      <div class="sort">
+        <span class="count" id="count">9 patrones</span>
+        <label for="sortSel">Ordenar</label>
+        <select id="sortSel">
+          <option value="new">Novedades</option>
+          <option value="asc">Precio: de menor a mayor</option>
+          <option value="desc">Precio: de mayor a menor</option>
+        </select>
+      </div>
+    </div>
+  </div>
+  <div class="gut"><div class="inner grid" id="grid"></div></div>
+</main>
+
+<section class="perks gut">
+  <div class="inner">
+    <div><b>Descarga inmediata</b><p>Recibes un ZIP con el manual y el patrón en A4, A0 y para proyector.</p></div>
+    <div><b>Cada talla en su color</b><p>Imprimes solo las páginas de tu talla y recortas por una sola línea.</p></div>
+    <div><b>Manual paso a paso</b><p>Cada costura explicada con fotos, en el orden de montaje.</p></div>
+  </div>
+</section>
+
+<footer class="gut">
+  <div class="inner">
+    <div class="cols">
+      <div id="ayuda"><b>Ayuda</b><span>El ZIP se abre con doble clic en el ordenador</span><span>Imprime al 100 % (tamaño real)</span><span>Cada patrón incluye su tabla de tallas</span></div>
+      <div><b>Hilván</b><span>Sobre nosotras</span><span>Telas recomendadas</span><span>Contacto</span></div>
+    </div>
+    <span>© 2026 Hilván · Patrones de costura en PDF</span>
+  </div>
+</footer>
+
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" aria-hidden="true" aria-label="Ficha del patrón">
+  <button class="close" id="close" type="button" aria-label="Cerrar">✕</button>
+  <div class="ph"><img id="dImg" alt=""></div>
+  <div class="body">
+    <div class="row"><h2 id="dName"></h2><span id="dPrice" class="price"></span></div>
+    <p id="dDesc"></p>
+    <div>
+      <div class="up" style="color:var(--grey);margin-bottom:8px">Incluye</div>
+      <p class="inc">Un ZIP con 4 PDF: manual paso a paso, patrón A4 para imprimir en casa, patrón A0 para copistería y patrón para proyector.</p>
+    </div>
+    <a class="add" id="dBuy" href="#">Comprar</a>
+    <div class="spec">
+      <div><span>Tallas</span><span id="dSizes"></span></div>
+      <div><span>Dificultad</span><span id="dLvl"></span></div>
+      <div><span>Tela recomendada</span><span id="dFab"></span></div>
+      <div><span>Manual</span><span id="dPages"></span></div>
+    </div>
+  </div>
+</aside>
+
+
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://unpkg.com/lenis@1.1.13/dist/lenis.min.js"></script>
+<script>
+(function(){
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const items = [
+    {id:'camiseta',name:'Camiseta básica',      cat:'camisas', price:9,  order:0, isNew:true, buy:'https://payhip.com/b/HFg5q', sizes:'XS–XL', lvl:'Fácil',    fab:'Punto de algodón (jersey)',pages:14, desc:'Camiseta de hombre de cuello redondo con tira y manga corta. Ideal para empezar a coser punto.'},
+    {id:'blazer',  name:'Blazer Olmo',          cat:'abrigos', price:16, order:1, isNew:true,  lvl:'Media',    fab:'Lana fría, franela',      pages:34, desc:'Americana entallada de dos botones con solapa de muesca y bolsillos con cartera.'},
+    {id:'abrigo',  name:'Abrigo cruzado Nieve',  cat:'abrigos', price:22, order:2, isNew:true,  lvl:'Avanzada', fab:'Paño de lana, loden',     pages:44, desc:'Abrigo largo cruzado con solapa ancha y forro completo.'},
+    {id:'camisa',  name:'Camisa Alba',           cat:'camisas', price:14, order:3, isNew:false, lvl:'Media',    fab:'Popelín, batista',        pages:28, desc:'Camisa clásica con cuello de pie, canesú y puño con botón.'},
+    {id:'pantalon',name:'Pantalón de pinzas Leo',cat:'bajos',   price:16, order:4, isNew:true,  lvl:'Media',    fab:'Lana, crepé, lino',       pages:32, desc:'Pantalón de tiro alto y pierna ancha con dos pinzas delanteras.'},
+    {id:'vestido', name:'Vestido camisero Marta',cat:'camisas', price:18, order:5, isNew:false, lvl:'Media',    fab:'Viscosa, popelín',        pages:36, desc:'Vestido midi abotonado con cuello camisero y cinturón anudado.'},
+    {id:'falda',   name:'Falda lápiz Rosa',      cat:'bajos',   price:12, order:6, isNew:false, lvl:'Fácil',    fab:'Lana, gabardina elástica',pages:20, desc:'Falda midi de tiro alto con pinzas y abertura trasera.'},
+    {id:'trench',  name:'Gabardina Lluvia',      cat:'abrigos', price:24, order:7, isNew:true,  lvl:'Avanzada', fab:'Gabardina de algodón',    pages:48, desc:'Trench cruzado con cinturón, charreteras y pieza de tormenta.'},
+    {id:'chaleco', name:'Chaleco Sastre',        cat:'abrigos', price:12, order:8, isNew:false, lvl:'Fácil',    fab:'Lana, tweed',             pages:22, desc:'Chaleco de sastre con escote en pico, cinco botones y vivos.'}
+  ];
+  items.forEach(i=>{ if(!i.buy){ i.soon=true; i.isNew=false; } if(!i.sizes) i.sizes='34–46'; });
+  const eur = n => n.toFixed(2).replace('.',',')+' €';
+  const grid=document.getElementById('grid');
+  let filter='all', sort='new';
+
+  function draw(){
+    let list=items.filter(i=>filter==='all'||i.cat===filter);
+    if(sort==='asc') list=[...list].sort((a,b)=>a.price-b.price);
+    else if(sort==='desc') list=[...list].sort((a,b)=>b.price-a.price);
+    else list=[...list].sort((a,b)=>a.order-b.order);
+    grid.innerHTML=list.map(i=>`
+      <article class="card" data-id="${i.id}" tabindex="0" aria-label="${i.name}, ${eur(i.price)}">
+        <div class="ph">
+          <img src="img/${i.id}.jpg" alt="${i.name}: mitad prenda real, mitad patrón" loading="lazy">
+          ${i.soon?'<span class="badge">Próximamente</span>':(i.isNew?'<span class="badge">Nuevo</span>':'')}
+          ${i.buy?`<a class="quick" href="${i.buy}" data-buy>Comprar · ${eur(i.price)}</a>`:''}
+        </div>
+        <div class="meta">
+          <div><h3>${i.name}</h3><div class="sub">${i.soon?'Próximamente':'Patrón PDF · Tallas '+i.sizes}</div></div>
+          <span class="price">${i.soon?'':eur(i.price)}</span>
+        </div>
+      </article>`).join('');
+    document.getElementById('count').textContent=list.length+(list.length===1?' patrón':' patrones');
+    if(window.gsap && !reduce) gsap.from('.card',{y:24,duration:.7,stagger:.05,ease:'power3.out'});
+  }
+  draw();
+
+  /* Filtros y orden */
+  const catBtns=[...document.querySelectorAll('#cats button')];
+  function setFilter(f){
+    filter=f; catBtns.forEach(b=>b.setAttribute('aria-pressed',b.dataset.f===f?'true':'false')); draw();
+  }
+  catBtns.forEach(b=>b.addEventListener('click',()=>setFilter(b.dataset.f)));
+  document.querySelectorAll('[data-go]').forEach(a=>a.addEventListener('click',()=>setFilter(a.dataset.go)));
+  document.getElementById('sortSel').addEventListener('change',e=>{sort=e.target.value;draw();});
+
+  /* Ficha lateral */
+  const drawer=document.getElementById('drawer'), scrim=document.getElementById('scrim');
+  let current=null;
+  function open(id){
+    const it=items.find(i=>i.id===id); current=id;
+    document.getElementById('dImg').src=`img/${id}.jpg`;
+    document.getElementById('dImg').alt=`${it.name}: mitad prenda real, mitad patrón`;
+    document.getElementById('dName').textContent=it.name;
+    document.getElementById('dPrice').textContent=eur(it.price);
+    document.getElementById('dDesc').textContent=it.desc;
+    document.getElementById('dLvl').textContent=it.lvl;
+    document.getElementById('dFab').textContent=it.fab;
+    document.getElementById('dPages').textContent=it.pages+' páginas con fotos';
+    drawer.classList.add('open'); scrim.classList.add('open'); drawer.setAttribute('aria-hidden','false');
+    drawer.scrollTop=0; document.getElementById('close').focus();
+    document.getElementById('dSizes').textContent=it.sizes;
+    document.getElementById('dPrice').textContent=it.soon?'':eur(it.price);
+    const bb=document.getElementById('dBuy');
+    if(it.buy){ bb.href=it.buy; bb.textContent='Comprar · '+eur(it.price); bb.removeAttribute('aria-disabled'); bb.classList.remove('off'); }
+    else { bb.removeAttribute('href'); bb.textContent='Próximamente'; bb.setAttribute('aria-disabled','true'); bb.classList.add('off'); }
+  }
+  function close(){ drawer.classList.remove('open'); drawer.setAttribute('aria-hidden','true'); scrim.classList.remove('open'); }
+  grid.addEventListener('click',e=>{
+    if(e.target.closest('[data-buy]')) return;
+    const c=e.target.closest('.card'); if(c) open(c.dataset.id);
+  });
+  grid.addEventListener('keydown',e=>{ if(e.key==='Enter'){ const c=e.target.closest('.card'); if(c) open(c.dataset.id);} });
+  document.getElementById('close').addEventListener('click',close);
+  scrim.addEventListener('click',close);
+  document.addEventListener('keydown',e=>{ if(e.key==='Escape') close(); });
+
+  if(!window.gsap) return;
+  if(window.ScrollTrigger) gsap.registerPlugin(ScrollTrigger);
+
+  /* Scroll suave y anclas */
+  let lenis=null;
+  if(window.Lenis && !reduce){
+    lenis=new Lenis({lerp:.12});
+    if(window.ScrollTrigger) lenis.on('scroll',ScrollTrigger.update);
+    gsap.ticker.add(t=>lenis.raf(t*1000)); gsap.ticker.lagSmoothing(0);
+  }
+  document.querySelectorAll('a[href="#catalogo"]').forEach(a=>a.addEventListener('click',e=>{
+    e.preventDefault(); const t=document.getElementById('catalogo');
+    lenis ? lenis.scrollTo(t,{offset:-70}) : t.scrollIntoView({behavior:reduce?'auto':'smooth'});
+  }));
+
+  /* Portada: entrada suave de la foto y el texto */
+  if(!reduce){
+    gsap.from('#heroImg',{scale:1.06,duration:1.8,ease:'power2.out'});
+    gsap.from('.hero .copy .inner > *',{y:20,duration:1,stagger:.1,ease:'power3.out',delay:.2});
+    if(window.ScrollTrigger) gsap.to('#heroImg',{yPercent:8,ease:'none',scrollTrigger:{trigger:'.hero',start:'top top',end:'bottom top',scrub:true}});
+  }
+})();
+</script>
+
+</body>
+</html>

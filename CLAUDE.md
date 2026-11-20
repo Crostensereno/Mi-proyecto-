@@ -1,0 +1,11 @@
+# Hilván · tienda de patrones de costura
+
+Proyecto de una tienda online de patrones de costura en PDF ("Hilván"). La web es sencilla, de estilo tienda de moda, en blanco, grises y negro. Las fotos de producto son mitad prenda real y mitad su patrón.
+
+- **Empieza por aquí:** lee `ESTADO.md`. Dice qué está hecho, qué decisiones se han tomado y cuál es el siguiente paso.
+- **Web:** la tienda está en `web/` (vista previa en https://claude.ai/artifact/QeihCxazz8HYBbnduVEf5D). La camiseta se compra en Payhip: https://payhip.com/b/HFg5q
+- **Patrones:** cuando la usuaria pida un patrón, su manual o los PDF de una prenda, usa siempre la skill `patron-hilvan` (`.claude/skills/patron-hilvan/SKILL.md`). Define el formato fijo de 4 PDF (manual, A4, A0 y proyector) y trae la plantilla de código.
+- **Resultados:** los patrones terminados van en `patrones/<prenda>-<REF>/`. El de referencia es `patrones/camiseta-H-031/`.
+- **Anuncios:** los vídeos para Reels y TikTok van en `anuncios/`. Hay una idea guardada y pendiente de terminar: el anuncio de la Henley en stop-motion. Antes de seguir con ella, lee `anuncios/henley/README.md`.
+- **Clientas:** son principiantes. Todo tiene que ser muy fácil de recortar y de entender.
+- **Idioma:** responde a la usuaria en español y con lenguaje sencillo.
