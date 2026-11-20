@@ -30,4 +30,6 @@
    - Redes: Instagram, TikTok y Pinterest.
 
 ## Nota
-Todo está en la rama `claude/blissful-shannon-4r6dk2`. Pendiente: proponer una pull request para pasarlo a la rama principal, para que las sesiones nuevas lo vean aunque empiecen desde `main`.
+- **Rama principal:** todo el trabajo se pasa a la rama principal (`main`) con una pull request, para que las sesiones nuevas lo vean desde el principio.
+- **Al empezar una conversación nueva:** abrirla en Claude Code con el repositorio `Mi-proyecto-` y decir "Seguimos con Hilván, lee ESTADO.md".
+- **Al terminar cada sesión:** actualizar este archivo con lo nuevo y los siguientes pasos.
