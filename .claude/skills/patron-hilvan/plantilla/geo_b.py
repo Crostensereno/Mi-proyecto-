@@ -94,6 +94,18 @@ def pocket():
     return {'seam': curve[:-1] + straight, 'cut': cut, 'segs': dict(zip(['curve', 'straight'], cut_outline.last_segs))}
 
 
+def fly(s):
+    """Pespunte en J de la bragueta falsa, en coordenadas del delantero (línea de costura)."""
+    f = front_seam(s)
+    fe = f['top'][0][0]
+    R = RISE[s]
+    x = fe + 3.5
+    ye = R - fe + 2.0
+    curve = f['crotch'][:-1]
+    xe, yc = min(curve, key=lambda p: abs(p[1] - ye))
+    return [(x, 0), (x, yc - 4)] + qbez((x, yc - 4), (x, yc), (xe, yc))[1:]
+
+
 def length(pts):
     return LineString(pts).length
 

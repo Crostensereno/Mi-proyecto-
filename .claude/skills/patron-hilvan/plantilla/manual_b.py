@@ -4,14 +4,14 @@ import manual as Mn
 import render_b as RB
 from manual import badges, table, page, tip, steps_list, figure, fmt, CSS, FONTS
 from render2 import COL, path, CW, CH, TW, TH, COLS, ROWS, a4_page_ranges, SCISSORS
-from geo_b import SIZES, piece, pocket, measures, front_seam, back_seam, POCKET_OPEN, WAIST_BODY
+from geo_b import SIZES, piece, pocket, measures, front_seam, back_seam, POCKET_OPEN, WAIST_BODY, fly
 from shapely.geometry import LineString
 
 REF = 'H-032'
 NAME = 'Bermuda de hombre'
 Mn.REF = REF
-Mn.TOTAL = 17
-TOTAL = 17
+Mn.TOTAL = 18
+TOTAL = 18
 OUT = 'build'
 M = {s: measures(s) for s in SIZES}
 
@@ -123,6 +123,8 @@ def step_svg(n):
                 '<text x="60" y="58" font-size="3.4" text-anchor="middle">el imperdible lleva el elástico por dentro</text>'
                 '<rect x="36" y="66" width="48" height="10" fill="#fff" stroke="#111" stroke-width=".6"/><rect x="56" y="66" width="8" height="10" fill="#d9d9d6"/>'
                 '<path d="M57 67 L63 75 M63 67 L57 75" stroke="#111" stroke-width=".7"/><text x="60" y="84" font-size="3.4" text-anchor="middle">solapa 2 cm y cose con zigzag</text></svg>')
+    if n == 'fly':
+        return fly_svg()
     if n == 7:
         return ('<svg viewBox="0 0 120 92" class="stp"><rect x="16" y="6" width="88" height="62" fill="#c9c9c6" stroke="#111" stroke-width=".5"/>'
                 '<rect x="16" y="68" width="88" height="10" fill="#e2e2df" stroke="#111" stroke-width=".5"/>'
@@ -131,9 +133,58 @@ def step_svg(n):
                 '<text x="60" y="87" font-size="3.4" text-anchor="middle">dobla 1 cm, luego 2,5 cm · cose a 2,3 cm del borde</text></svg>')
 
 
-def step(n, title, items, tipt):
+def fly_svg():
+    return ('<svg viewBox="0 0 120 92" class="stp"><rect x="18" y="8" width="84" height="10" fill="#bdbdba" stroke="#111" stroke-width=".5"/>'
+            '<path d="M18 18 L102 18 L106 88 L64 88 L60 52 L56 88 L14 88 Z" fill="#d9d9d6" stroke="#111" stroke-width=".5"/>'
+            '<path d="M60 18 L60 52" stroke="#111" stroke-width=".8"/>'
+            '<path d="M68 19 L68 40 Q68 47 61 49" fill="none" stroke="#111" stroke-width="1.2" stroke-dasharray="2 1.2"/>'
+            '<path d="M71.5 19 L71.5 41 Q71.5 50 62 52" fill="none" stroke="#111" stroke-width=".7" stroke-dasharray="1.4 1"/>'
+            '<text x="86" y="34" font-size="3.4" font-weight="600" text-anchor="middle">pespunte</text><text x="86" y="38.5" font-size="3.4" font-weight="600" text-anchor="middle">en J</text>'
+            '<text x="38" y="72" font-size="3.2" text-anchor="middle" fill="#555">costura del tiro</text><path d="M44 70 L58 46" stroke="#555" stroke-width=".4"/>'
+            '<text x="60" y="5" font-size="3.4" text-anchor="middle">vista de frente, con la bermuda del derecho</text></svg>')
+
+
+def leg(x, fill, dash=True, scale=1.0):
+    p = f'M{x+8} 10 L{x+30} 10 L{x+32} 64 L{x+6} 64 L{x+4} 28 Q{x+5} 16 {x+8} 10 Z'
+    g = f'<path d="{p}" fill="{fill}" stroke="#111" stroke-width=".6"/>'
+    g += f'<path d="M{x+4} 28 Q{x+5} 16 {x+8} 10" fill="none" stroke="#111" stroke-width="1.6"/>'
+    if dash:
+        g += f'<path d="M{x+5} 30 L{x+7} 63" stroke="#111" stroke-width=".5" stroke-dasharray="1.5 1"/>'
+    return g
+
+
+def tiro_panels():
+    light, dark = '#ececea', '#9a9a97'
+    p1 = (leg(14, light) + leg(56, light) +
+          '<text x="25" y="72" font-size="4" text-anchor="middle">pernera A</text><text x="67" y="72" font-size="4" text-anchor="middle">pernera B</text>'
+          '<text x="4" y="22" font-size="3.4" font-weight="700">tiro</text>')
+    p2 = (leg(14, dark, dash=False) + leg(56, light) +
+          '<path d="M42 30 C50 18 50 44 42 36" fill="none" stroke="#111" stroke-width=".8"/><path d="M41 33.5 L42 36 L44.5 35" fill="none" stroke="#111" stroke-width=".8"/>'
+          '<text x="25" y="72" font-size="4" text-anchor="middle" font-weight="700">A del derecho</text><text x="67" y="72" font-size="4" text-anchor="middle">B del revés</text>')
+    p3 = (leg(34, light) + f'<path d="M{34+10} 10 L{34+28} 10 L{34+29} 50 L{34+11} 50 L{34+9} 28 Q{34+9} 16 {34+10} 10 Z" fill="{dark}" stroke="#111" stroke-width=".5" stroke-dasharray="2 1"/>'
+          '<path d="M82 14 L82 40" stroke="#111" stroke-width=".9"/><path d="M80 37 L82 41 L84 37" fill="none" stroke="#111" stroke-width=".9"/>'
+          '<text x="88" y="26" font-size="3.4">mete A</text><text x="88" y="30.5" font-size="3.4">dentro</text>'
+          '<text x="50" y="72" font-size="3.8" text-anchor="middle">las cinturas, a la misma altura</text>')
+    p4 = ('<path d="M18 8 Q20 52 50 58 Q80 52 84 4" fill="none" stroke="#111" stroke-width="5" stroke-linecap="round" stroke-opacity=".18"/>'
+          '<path d="M18 8 Q20 52 50 58 Q80 52 84 4" fill="none" stroke="#111" stroke-width="1" stroke-dasharray="2 1.3"/>'
+          '<circle cx="50" cy="58" r="2.2" fill="#111"/>'
+          + ''.join(f'<rect x="{x-1.6}" y="{y-1}" width="3.2" height="2" fill="#555" transform="rotate({r} {x} {y})"/>' for x, y, r in [(21, 26, 80), (30, 47, 40), (70, 47, -40), (80, 24, -80)]) +
+          '<text x="12" y="6" font-size="3.6" font-weight="700">delante</text><text x="78" y="2.6" font-size="3.6" font-weight="700">detrás</text>'
+          '<text x="50" y="66" font-size="3.4" text-anchor="middle">las dos costuras de la entrepierna, juntas</text>'
+          '<text x="50" y="34" font-size="3.6" text-anchor="middle" font-weight="700">cose la U</text><text x="50" y="39" font-size="3.2" text-anchor="middle">de una sola vez</text>')
+    caps = [('Tienes dos perneras', 'Las dos con el revés por fuera. Arriba, la curva del tiro.'),
+            ('Dale la vuelta a una', 'La pernera A, con el derecho por fuera, como un calcetín. La B se queda del revés.'),
+            ('Métela dentro de la otra', 'Mete A dentro de B, empezando por el bajo, como un vaso dentro de otro. Las curvas del tiro quedan juntas.'),
+            ('Cose la U del tiro', 'Junta las costuras de la entrepierna abajo, pon clips por toda la curva y cose de la cintura de delante a la de detrás.')]
+    out = ''
+    for i, (svg, (t, d)) in enumerate(zip([p1, p2, p3, p4], caps)):
+        out += f'<div class="pan"><svg viewBox="0 0 100 74">{svg}</svg><div class="cap"><span class="n">{i+1}</span><div><b>{t}</b><p>{d}</p></div></div></div>'
+    return f'<div class="pans">{out}</div>'
+
+
+def step(n, title, items, tipt, art=None):
     return f'''<div class="step"><div class="sh"><span class="sn">{n}</span><div><span class="eb">Paso {n}</span><h3>{title}</h3></div></div>
-      <div class="sg"><div class="art">{step_svg(n)}</div>{steps_list(items)}</div>{tip("Consejo", tipt)}</div>'''
+      <div class="sg"><div class="art">{step_svg(art or n)}</div>{steps_list(items)}</div>{tip("Consejo", tipt)}</div>'''
 
 
 # ---------- Puntos para dibujar a mano ----------
@@ -156,6 +207,9 @@ def leg_points(s, back):
     for i in range(1, 5):
         pts.append((f't{i}', 'curva del tiro', at(cr, curve_len * i / 5)))
     pts.append(('P', 'Fin de la curva: de aquí a A, recto', at(cr, curve_len)))
+    if not back:
+        fj = fly(s)
+        pts += [('J1', 'Bragueta falsa: arriba (pespunte)', fj[0]), ('J2', 'Bragueta falsa: empieza la curva', fj[1]), ('J3', 'Bragueta falsa: llega al tiro', fj[-1])]
     return pts
 
 
@@ -185,8 +239,8 @@ def annex(P):
                         'Dibuja con regla una <b>esquina</b>: una línea horizontal arriba y otra vertical a la izquierda. La esquina es el <b>(0, 0)</b>.',
                         'Para cada punto de tu talla, mide <b>x hacia la derecha</b> e <b>y hacia abajo</b> desde la esquina y marca un punto con el boli.',
                         'Une con regla: <b>A–B</b> (cintura), <b>B–K–E</b> (costado), <b>E–F</b> (bajo), <b>F–C</b> (entrepierna) y <b>P–A</b>. De C a P, pasando por t1…t4, traza una <b>curva suave</b> a mano: es el tiro.',
-                        'Copia también las rayitas del costado (boca del bolsillo, a 2 y a 18 cm de la cintura) y recorta. <b>El margen ya está incluido.</b>'])
-    for n, back, title in [(15, False, 'Delantero'), (16, True, 'Trasero')]:
+                        'Copia también las rayitas del costado (boca del bolsillo, a 2 y a 18 cm de la cintura) y la J de la bragueta falsa (J1–J2 recto, J2–J3 en curva). Recorta. <b>El margen ya está incluido.</b>'])
+    for n, back, title in [(16, False, 'Delantero'), (17, True, 'Trasero')]:
         raw = {s: leg_points(s, back) for s in SIZES}
         pts, origin = shift(raw)
         tab = Mn.coord_table(pts)
@@ -206,7 +260,7 @@ def annex(P):
     diag = pts_diagram(pk, d['cut'], (x0, y0), '-3 -3 26 36')
     band = table([('Cinturilla: corta 2 (abierta, largo × alto)',) + tuple(f'{fmt(2*M[s]["band_cut_half"])} × 10' for s in SIZES),
                   ('Elástico de 3,5 cm: largo de corte',) + tuple(f'{M[s]["elastic"]}' for s in SIZES)])
-    P.append(page(17, 'Sin impresora · dibújalo con regla', 'Bolsillo y cinturilla', f'''
+    P.append(page(18, 'Sin impresora · dibújalo con regla', 'Bolsillo y cinturilla', f'''
   <div class="two fx ann sl"><div>{diag}<p class="note c">Bolsillo: talla única</p></div><div>
   <p class="note">El bolsillo es igual en todas las tallas. Dibuja la línea vertical del borde recto a la izquierda: va de <b>A</b> a <b>B</b>. Une A con los puntos c1…c7 y B con una <b>curva suave</b>. Marca las rayitas de la boca en el borde recto, a 3,3 y a 19,3 cm de arriba.</p>
   {ptab}</div></div>
@@ -229,8 +283,8 @@ def build():
   </div></section>''')
 
     idx = [('Materiales y herramientas', 3), ('Guía de tallas', 4), ('Medidas de la prenda terminada', 5), ('Cómo imprimir el patrón', 6),
-           ('Cómo leer el patrón', 7), ('Cómo cortar la tela', 8), ('Antes de coser: lo esencial', 9), ('Montaje paso a paso (7 pasos)', 10),
-           ('Remate y revisión', 14), ('Sin impresora: dibújalo con regla', 15)]
+           ('Cómo leer el patrón', 7), ('Cómo cortar la tela', 8), ('Antes de coser: lo esencial', 9), ('Montaje paso a paso (8 pasos)', 10),
+           ('Remate y revisión', 15), ('Sin impresora: dibújalo con regla', 16)]
     P.append(page(2, 'Antes de empezar', 'Bienvenida', f'''
   <p class="intro">Con este patrón vas a coser una <b>bermuda de hombre con cintura elástica, bolsillos en el costado y largo a 1 cm de la rodilla</b>, desde cero. No lleva cremallera ni botones: solo necesitas <b>una máquina de coser con puntada recta y zigzag, la tela, un elástico y el patrón impreso</b>. Cada talla tiene <b>su color y sus propias páginas</b>, a tamaño real y con el <b>margen de costura ya incluido</b>. ¿No tienes impresora? Al final del manual tienes las medidas para dibujarlo con papel, boli y regla.</p>
   <div class="cards3"><div class="card"><span class="eb">Nivel</span><b>Principiante</b><small>sin conocimientos previos</small></div>
@@ -245,7 +299,7 @@ def build():
   </div>
   <div class="two">
     <div><h4>Archivos que incluye</h4>
-      <div class="files"><div><b>Manual</b><span>este documento · 17 páginas</span></div><div><b>Patrón A4</b><span>18 hojas por talla · imprime solo la tuya</span></div><div><b>Patrón A0</b><span>1 hoja por talla, para copistería</span></div><div><b>Patrón proyector</b><span>1 página por talla, clara y oscura</span></div></div></div>
+      <div class="files"><div><b>Manual</b><span>este documento · 18 páginas</span></div><div><b>Patrón A4</b><span>18 hojas por talla · imprime solo la tuya</span></div><div><b>Patrón A0</b><span>1 hoja por talla, para copistería</span></div><div><b>Patrón proyector</b><span>1 página por talla, clara y oscura</span></div></div></div>
     <div><h4>En este manual</h4><div class="toc">{''.join(f'<div><span>{a}</span><i></i><b>{b}</b></div>' for a, b in idx)}</div></div>
   </div>
   {tip('Antes de cortar la tela buena', 'Si es la primera vez que usas este patrón, haz una prueba con una tela barata y de tu talla. Así compruebas el ajuste y el largo y practicas cada paso sin miedo a equivocarte.')}'''))
@@ -375,30 +429,39 @@ def build():
         (1, 'Cose los bolsillos', ['Remata con zigzag los costados, la entrepierna y el tiro de las 4 piezas, y la curva de los 4 bolsillos.', 'Pon un <b>bolsillo</b> sobre el costado de un <b>delantero</b>, <b>derecho con derecho</b>: borde recto con borde recto y las rayitas juntas.', 'Cose a <b>1 cm</b> del borde todo el borde recto del bolsillo.', 'Abre el bolsillo hacia fuera y plancha la costura hacia el bolsillo.', 'Repite con el otro delantero y con los dos traseros.'], 'Si el bolsillo asoma por fuera al terminar, haz un pespunte a 0,5 cm por encima de la costura, sobre el bolsillo.'),
         (2, 'Cierra los costados', ['Pon un delantero y un trasero <b>derecho con derecho</b>, costado con costado y los bolsillos juntos hacia fuera.', 'Casa las rayitas: la del delantero con las dos del trasero, y las de la boca del bolsillo.', 'Cose a <b>1,5 cm</b> desde la cintura hasta la primera rayita de la boca, <b>gira y sigue por la curva del bolsillo</b> a 1 cm hasta la segunda rayita, y vuelve al costado hasta el bajo.', 'Haz retroceso en las dos rayitas de la boca: ahí se hace fuerza al meter la mano.', 'Plancha el costado abierto y el bolsillo hacia el delantero. Repite en la otra pierna.'], 'Mide el costado y compáralo con la tabla (pág. 5): debe coincidir con tu talla.'),
         (3, 'Cierra la entrepierna', ['Dobla cada pierna por la mitad, <b>derecho con derecho</b>, con la entrepierna del delantero sobre la del trasero.', 'Casa primero el bajo y la punta de la entrepierna y sujeta con clips.', 'Cose a <b>1,5 cm</b> del bajo hasta la punta de la entrepierna.', 'Plancha la costura abierta.', 'Ahora tienes <b>dos perneras</b>.'], 'Si una capa sobra un poco al llegar arriba, estírala con suavidad: la diferencia es pequeña y se reparte.'),
-        (4, 'Une las dos perneras (tiro)', ['Da la vuelta a una pernera, con el <b>derecho por fuera</b>.', 'Métela <b>dentro</b> de la otra pernera, que sigue con el revés por fuera: así quedan <b>derecho con derecho</b>.', 'Casa las costuras de la entrepierna y la cintura de delante y de atrás.', 'Cose el tiro a <b>1,5 cm</b> en <b>una sola costura curva</b>, de la cintura delantera a la trasera, con puntada de largo 2.', 'Cose una segunda vez sobre la parte curva de abajo para reforzarla. Saca la pernera de dentro.'], 'Recorta el margen de la curva de abajo a 0,7 cm: así no tira ni hace bulto al sentarte.'),
-        (5, 'Prepara y cose la cinturilla', ['Une las 2 cinturillas por los extremos cortos, <b>derecho con derecho</b>, a 1 cm. En una de las costuras deja <b>4 cm sin coser</b> en una de las dos mitades a lo largo: por ahí meterás el elástico.', 'Abre las costuras con la plancha y dobla la cinturilla a lo largo, <b>revés con revés</b>: queda de 4 cm. Plancha.', 'Pon la cinturilla sobre la cintura del pantalón, por el derecho, con los bordes juntos, las costuras en los costados y <b>la abertura hacia dentro</b>.', 'Cose a <b>1 cm</b> todo alrededor, sin estirar.', 'Remata con zigzag y plancha la cinturilla hacia arriba.'], 'La cintura del pantalón y la cinturilla miden lo mismo: si sobra o falta, revisa que las costuras de la cinturilla estén en los costados.'),
-        (6, 'Mete el elástico', ['Engancha un <b>imperdible</b> en un extremo del elástico.', 'Mételo por la abertura y llévalo por dentro de la cinturilla hasta que salga por el mismo sitio. Sujeta el otro extremo con un alfiler para que no se escape.', 'Comprueba que el elástico <b>no está retorcido</b>.', 'Solapa los extremos <b>2 cm</b> y cóselos con zigzag, yendo y viniendo varias veces.', 'Cierra la abertura a máquina o a mano y reparte el frunce por toda la cintura.'], 'Para que el elástico no gire al lavar, cose una línea vertical en cada costado, atravesando la cinturilla y el elástico.'),
-        (7, 'Dobladillo del bajo', ['Con la bermuda del revés, dobla <b>1 cm</b> hacia dentro el bajo de cada pierna y plancha.', 'Dobla otra vez <b>2,5 cm</b>, plancha y sujeta con clips.', 'Cose a <b>2,3 cm</b> del borde, cerca del primer doblez, dando la vuelta completa a la pierna.', 'Acaba cosiendo 2 cm encima del inicio para rematar.', 'Plancha todo el bajo con vapor.'], 'Mide los 2,5 cm en varios puntos antes de planchar: así el bajo queda recto y las dos piernas iguales.'),
+        (5, 'Bragueta falsa', ['Con la bermuda del derecho, plancha el margen de la costura del tiro de delante hacia el <b>lado izquierdo</b> (el izquierdo de quien la lleva puesta).', 'Copia con tiza la <b>J</b> del patrón sobre ese delantero: una línea recta a 3,5 cm de la costura del tiro, desde la cintura, que se curva hasta tocar la costura.', 'Cose por la línea con puntada recta de <b>largo 3</b>, atravesando el margen que queda debajo.', 'Opcional: cose una segunda línea a 0,6 cm por dentro, como en los vaqueros.', 'Lleva los hilos al revés y anúdalos.'], 'Es solo decorativa: no se abre. El patrón la marca en los dos delanteros porque se cortan a la vez; cósela solo en uno.', 'fly'),
+        (6, 'Prepara y cose la cinturilla', ['Une las 2 cinturillas por los extremos cortos, <b>derecho con derecho</b>, a 1 cm. En una de las costuras deja <b>4 cm sin coser</b> en una de las dos mitades a lo largo: por ahí meterás el elástico.', 'Abre las costuras con la plancha y dobla la cinturilla a lo largo, <b>revés con revés</b>: queda de 4 cm. Plancha.', 'Pon la cinturilla sobre la cintura del pantalón, por el derecho, con los bordes juntos, las costuras en los costados y <b>la abertura hacia dentro</b>.', 'Cose a <b>1 cm</b> todo alrededor, sin estirar.', 'Remata con zigzag y plancha la cinturilla hacia arriba.'], 'La cintura del pantalón y la cinturilla miden lo mismo: si sobra o falta, revisa que las costuras de la cinturilla estén en los costados.', 5),
+        (7, 'Mete el elástico', ['Engancha un <b>imperdible</b> en un extremo del elástico.', 'Mételo por la abertura y llévalo por dentro de la cinturilla hasta que salga por el mismo sitio. Sujeta el otro extremo con un alfiler para que no se escape.', 'Comprueba que el elástico <b>no está retorcido</b>.', 'Solapa los extremos <b>2 cm</b> y cóselos con zigzag, yendo y viniendo varias veces.', 'Cierra la abertura a máquina o a mano y reparte el frunce por toda la cintura.'], 'Para que el elástico no gire al lavar, cose una línea vertical en cada costado, atravesando la cinturilla y el elástico.', 6),
+        (8, 'Dobladillo del bajo', ['Con la bermuda del revés, dobla <b>1 cm</b> hacia dentro el bajo de cada pierna y plancha.', 'Dobla otra vez <b>2,5 cm</b>, plancha y sujeta con clips.', 'Cose a <b>2,3 cm</b> del borde, cerca del primer doblez, dando la vuelta completa a la pierna.', 'Acaba cosiendo 2 cm encima del inicio para rematar.', 'Plancha todo el bajo con vapor.'], 'Mide los 2,5 cm en varios puntos antes de planchar: así el bajo queda recto y las dos piernas iguales.', 7),
     ]
-    for n, ss in [(10, S[0:2]), (11, S[2:4]), (12, S[4:6])]:
-        P.append(page(n, f'Pasos {ss[0][0]} y {ss[1][0]}', 'Montaje paso a paso', ''.join(step(*s) for s in ss)))
-    P.append(page(13, 'Paso 7', 'Montaje paso a paso', step(*S[6]) + '''<h4>Resumen de la costura</h4>
-  <table class="t plain"><thead><tr><th>Paso</th><th>Costura</th><th>Margen</th><th>Puntada</th></tr></thead><tbody>''' + ''.join(
+    P.append(page(10, 'Pasos 1 y 2', 'Montaje paso a paso', step(*S[0]) + step(*S[1])))
+    tubes = ('<svg viewBox="0 0 100 74" class="tubes">' + leg(14, '#ececea') + leg(56, '#ececea') +
+             '<text x="25" y="72" font-size="4" text-anchor="middle">pierna</text><text x="67" y="72" font-size="4" text-anchor="middle">pierna</text></svg>')
+    P.append(page(11, 'Paso 3', 'Montaje paso a paso', step(*S[2]) + f"""
+  <div class="now"><div>{tubes}</div><div><h4>Lo que tienes ahora</h4><p>Dos <b>piernas sueltas</b>, como dos tubos, cada una cerrada por el costado y por la entrepierna. Arriba de cada una queda una <b>curva abierta</b>: es el <b>tiro</b>, la parte que va por delante, pasa entre las piernas y sube por detrás.</p><p>En el paso 4 vas a unir esas dos curvas con <b>una sola costura en forma de U</b>. Así los dos tubos se convierten en un pantalón.</p></div></div>"""))
+    P.append(page(12, 'Paso 4 · el más importante', 'Une las dos piernas (tiro)', f"""
+  <p class="intro">Para coser dos piezas siempre se ponen <b>derecho con derecho</b>. Con dos tubos, la forma más fácil es <b>meter uno dentro del otro</b>. Sigue los dibujos en orden:</p>
+  {tiro_panels()}
+  <h4>Paso a paso</h4>
+  {steps_list(['<b>Pernera A:</b> dale la vuelta para que el <b>derecho</b> quede por fuera.', '<b>Pernera B:</b> déjala como está, con el <b>revés</b> por fuera.', '<b>Mete A dentro de B</b>, empezando por el bajo, hasta que los bordes de la cintura coincidan.', 'Busca las dos <b>costuras de la entrepierna</b> (abajo del todo, en el centro de la U) y júntalas con un clip. Después junta la cintura de delante con la de delante y la de detrás con la de detrás. Pon clips por toda la curva.', 'Cose la U a <b>1,5 cm</b> de una sola vez, de la cintura de delante a la de detrás, con puntada de largo 2. Cose otra vez la parte de abajo de la U para reforzarla.', '<b>Saca la pernera A</b> tirando de ella: ya tienes la bermuda entera, con las costuras por dentro.'])}
+  {tip('Cómo saber que lo has hecho bien', 'Con la bermuda del derecho, la costura del tiro va de la cintura de delante, pasa por debajo entre las piernas y sube hasta la cintura de detrás, como la costura central de unos vaqueros. Antes de darle la vuelta, recorta el margen de la parte de abajo de la U a 0,7 cm para que no tire al sentarte.')}"""))
+    P.append(page(13, 'Pasos 5 y 6', 'Montaje paso a paso', step(*S[3]) + step(*S[4])))
+    P.append(page(14, 'Pasos 7 y 8', 'Montaje paso a paso', step(*S[5]) + step(*S[6])))
+    resumen = '<h4>Resumen de la costura</h4><table class="t plain sm"><thead><tr><th>Paso</th><th>Costura</th><th>Margen</th><th>Puntada</th></tr></thead><tbody>' + ''.join(
         f'<tr><td>{a}</td><td>{b}</td><td>{c_}</td><td>{d_}</td></tr>' for a, b, c_, d_ in [
             (1, 'Bolsillos al costado', '1 cm', 'recta'), (2, 'Costados y bolsillos', '1,5 cm (1 cm en la curva)', 'recta'),
-            (3, 'Entrepierna', '1,5 cm', 'recta'), (4, 'Tiro', '1,5 cm, dos veces', 'recta, largo 2'),
-            (5, 'Cinturilla', '1 cm', 'recta + zigzag'), (6, 'Elástico', 'solapa 2 cm', 'zigzag'),
-            (7, 'Bajo', 'doblar 1 + 2,5 · coser a 2,3', 'recta')]) + '</tbody></table>'))
-
-    P.append(page(14, 'Última página del manual', 'Remate y revisión', f'''
-  <div class="two fx"><div class="done"><img src="portada.jpg" alt=""></div><div><h4>Tu bermuda está lista</h4>
-  {steps_list(['Recorta los hilos sueltos de todas las costuras.', 'Plancha toda la prenda con vapor; la cinturilla, sin aplastar el frunce.', 'Compara las medidas con la tabla (pág. 5).', 'Pruébatela y revisa la lista de abajo.'])}</div></div>
+            (3, 'Entrepierna', '1,5 cm', 'recta'), (4, 'Tiro (la U)', '1,5 cm, abajo dos veces', 'recta, largo 2'),
+            (5, 'Bragueta falsa', 'pespunte en J', 'recta, largo 3'), (6, 'Cinturilla', '1 cm', 'recta + zigzag'),
+            (7, 'Elástico', 'solapa 2 cm', 'zigzag'), (8, 'Bajo', 'doblar 1 + 2,5 · coser a 2,3', 'recta')]) + '</tbody></table>'
+    P.append(page(15, 'Última página del manual', 'Remate y revisión', f"""
+  <h4>Tu bermuda está lista</h4>
+  {steps_list(['Recorta los hilos sueltos y plancha toda la prenda con vapor; la cinturilla, sin aplastar el frunce.', 'Compara las medidas con la tabla (pág. 5), pruébatela y revisa la lista de abajo.'])}
+  {resumen}
   <h4>Lista de comprobación</h4>
   <ul class="boxes">{''.join(f'<li>{t}</li>' for t in ['Los bolsillos quedan por dentro y no asoman', 'El elástico no está retorcido', 'El frunce está repartido por igual', 'Las dos piernas miden lo mismo', 'El tiro no tira al sentarte', 'Los bajos quedan rectos'])}</ul>
   <h4>Si algo sale mal</h4>
-  <table class="t plain kv"><tbody>{''.join(f'<tr><td><b>{a}</b></td><td>{b}</td></tr>' for a, b in [('El bolsillo asoma por fuera', 'Plánchalo hacia el delantero y haz un pespunte a 0,5 cm sobre la costura del bolsillo.'), ('El elástico se retuerce', 'Cose una línea vertical en cada costado atravesando la cinturilla y el elástico.'), ('La cintura queda ancha o justa', 'Saca el elástico por la abertura y acórtalo o alárgalo 2–3 cm.'), ('El tiro se descose al sentarte', 'Cose la curva otra vez con puntada más corta (2) y recorta el margen a 0,7 cm.'), ('El bajo queda torcido', 'Descose, mide los 2,5 cm en varios puntos, plancha y vuelve a coser.'), ('La tela se deshilacha', 'Remata todos los bordes con zigzag antes de coser.')])}</tbody></table>
-  {tip('Cuidado de la prenda', 'Lávala del revés a 30–40 °C y sécala tendida. Plancha a temperatura media; el lino, a temperatura alta y algo húmedo.')}
-  <p class="sign">¿La has cosido? Nos encantará verla. HILVÁN · patrones para coser tu propia ropa.</p>'''))
+  <table class="t plain kv sm"><tbody>{''.join(f'<tr><td><b>{a}</b></td><td>{b}</td></tr>' for a, b in [('El bolsillo asoma por fuera', 'Plánchalo hacia el delantero y haz un pespunte a 0,5 cm sobre la costura del bolsillo.'), ('El elástico se retuerce', 'Cose una línea vertical en cada costado atravesando la cinturilla y el elástico.'), ('La cintura queda ancha o justa', 'Saca el elástico por la abertura y acórtalo o alárgalo 2–3 cm.'), ('El tiro se descose al sentarte', 'Cose la curva otra vez con puntada más corta (2) y recorta el margen a 0,7 cm.'), ('El bajo queda torcido', 'Descose, mide los 2,5 cm en varios puntos, plancha y vuelve a coser.'), ('La tela se deshilacha', 'Remata todos los bordes con zigzag antes de coser.')])}</tbody></table>
+  {tip('Cuidado de la prenda', 'Lávala del revés a 30–40 °C y sécala tendida. Plancha a temperatura media; el lino, a temperatura alta y algo húmedo.')}"""))
     annex(P)
     return P
 
@@ -406,6 +469,14 @@ def build():
 EXTRA = """
 :root{--photo:#e7e7e7}
 .coord.pk{max-width:110mm}
+.pans{display:grid;grid-template-columns:1fr 1fr;gap:4mm;margin-top:3mm}
+.pan{background:#f4f4f2;padding:3mm 3.5mm}
+.pan svg{width:100%;height:46mm;display:block}
+.pan .cap{display:grid;grid-template-columns:7mm 1fr;gap:2mm;margin-top:1.5mm}
+.pan .cap p{color:#555;font-size:8pt;margin:.6mm 0 0}
+.now{display:grid;grid-template-columns:62mm 1fr;gap:6mm;align-items:center;background:#f4f4f2;padding:4mm;margin-top:2mm}
+.now .tubes{width:100%;height:46mm}
+.now p{font-size:8.6pt;margin-top:1.5mm}
 .ann{grid-template-columns:74mm 1fr}
 .ann.sl{grid-template-columns:62mm 1fr}
 .pd{max-height:100mm}

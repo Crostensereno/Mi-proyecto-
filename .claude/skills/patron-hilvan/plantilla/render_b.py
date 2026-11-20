@@ -3,7 +3,7 @@ import os
 from shapely.geometry import LineString, Polygon
 import render2 as R
 from render2 import T, badge, scissors_on, path, SCISSORS, COL, COL_DARK, DASH, grid_lines, CW, CH
-from geo_b import SIZES, piece, pocket, measures, POCKET_OPEN, front_seam, back_seam
+from geo_b import SIZES, piece, pocket, measures, POCKET_OPEN, front_seam, back_seam, fly
 
 R.REF = 'H-032'
 REF = R.REF
@@ -51,6 +51,12 @@ def leg_piece(s, back, lw, colors, solo=True):
         x = side_x_at(side, y)
         a, b = tp(x, y, back), tp(x - 1.1, y, back)
         g.append(f'<path d="M{a[0]:.2f} {a[1]:.2f} L{b[0]:.2f} {b[1]:.2f}" stroke="var(--ink)" stroke-width="{lw*2.6}"/>')
+    if not back:
+        fj = tr(fly(s), back)
+        g.append(f'<path d="{path(fj, False)}" fill="none" stroke="var(--ink)" stroke-width="{lw*1.4}" stroke-dasharray=".7 .35"/>')
+        if solo:
+            m = fj[1]
+            g.append(T(fj[0][0] + 1.2, fj[0][1] - .7, 'bragueta falsa: pespunte en J (cóselo solo en un delantero)', .45, 600))
     if solo:
         a = tp(side_x_at(side, (POCKET_OPEN[0] + POCKET_OPEN[1]) / 2) - 1.8, (POCKET_OPEN[0] + POCKET_OPEN[1]) / 2, back)
         g.append(T(a[0], a[1] + .2, 'boca del bolsillo', .45, 600, 'middle'))
