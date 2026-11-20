@@ -7,6 +7,7 @@
   - El resto de prendas son de ejemplo y aparecen como **"Próximamente"**.
   - Se quitó la cesta de demostración, porque el pago lo hace Payhip.
 - **Patrón camiseta H-031** (`patrones/camiseta-H-031/`): 4 PDF (manual, A4, A0, proyector), fotos de producto y `patrones/Hilvan_H-031_Camiseta_basica.zip`. Ese ZIP ya está subido a Payhip.
+- **Patrón bermuda H-032** (`patrones/bermuda-H-032/`): 4 PDF, fotos y `patrones/Hilvan_H-032_Bermuda.zip`, listo para subir a Payhip. Trazado desde cero; precio y nivel por definir. Aún no está en la web.
 - **Skill `patron-hilvan`** (`.claude/skills/patron-hilvan/`): el formato fijo y la plantilla para hacer patrones nuevos.
 - **Idea de anuncio** en stop-motion para la Henley (`anuncios/henley/README.md`). Está guardada y falta el vídeo real de la usuaria.
 

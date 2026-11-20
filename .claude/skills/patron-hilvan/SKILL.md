@@ -9,6 +9,15 @@ La usuaria vende patrones de costura en PDF en su tienda **Hilván** (web en bla
 
 La implementación de referencia es la **camiseta básica H-031** (`plantilla/`) y su resultado final está en `patrones/camiseta-H-031/`. Para un patrón nuevo, copia `plantilla/` a una carpeta de trabajo y cambia solo la geometría y los textos de la prenda.
 
+## Referencias que ya existen
+- **Camiseta H-031** (`geo.py`, `render2.py`, `manual.py`): piezas al doblez (delantero y espalda), manga entera y tira del cuello.
+- **Bermuda H-032** (`geo_b.py`, `render_b.py`, `manual_b.py`): patrón trazado desde cero con medidas estándar de hombre.
+  - Piezas: delantero y trasero (corta 2, sin doblez), bolsillo de costado (talla única, corta 4), cinturilla (corta 2 al doblez) y elástico.
+  - Las perneras van **tumbadas** en la plancha (cintura a la izquierda, bajo a la derecha) para que todo quepa en A0.
+  - `render_b.py` reutiliza la maquetación de `render2.py` sustituyendo `canvas_size`/`canvas_all`. `manual_b.py` reutiliza los helpers de `manual.py`.
+  - Para una prenda nueva parecida, copia el par más cercano y cambia la geometría. Pon la foto de la prenda en `build/portada.jpg` antes de generar el manual.
+- **Si no hay patrón de origen:** traza con las tallas de cuerpo de la guía (pecho, cintura y cadera, límite alto de cada rango) más una holgura. Comprueba que los costados y las entrepiernas de las piezas que se unen midan lo mismo y que la cintura elástica sea mayor que la cadera.
+
 ## Qué se entrega (siempre 4 PDF)
 
 Carpeta `patrones/<prenda>-<REF>/` con estos nombres:
